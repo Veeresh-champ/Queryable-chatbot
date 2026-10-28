@@ -1,0 +1,18 @@
+.git
+.env
+.env.*
+!.env.example
+.venv
+venv
+**/__pycache__
+.pytest_cache
+logs
+data
+evaluation_results.json
+openui_test
+openui_design4
+AI trainee
+backend/*_backup.py
+backend/*_before_*
+backend/static_backup
+!openui_test/scripts/openui-validator.mjs

@@ -1,4 +1,68 @@
+﻿# Environment variables and secrets (never commit real keys)
 .env
+.env.*
+!.env.example
+
+# Python
 .venv/
+venv/
 __pycache__/
-data/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Data: only the sample CSVs used by the import scripts are committed
+data/*
+!data/span_companies.csv
+!data/ibm_hr/
+!data/kaggle_ecommerce/
+evaluation_results.json
+served.css
+
+# Node.js and Next.js
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Local editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and runtime output
+logs/
+*.log
+
+# Old experiments, backups and scratch files kept only on this machine
+AI trainee/
+openui_design4/
+openui_test/legacy/
+openui_test/AGENTS.md
+openui_test/CLAUDE.md
+backend/static_backup/
+backend/*_backup*
+backend/*_before_*
+backend/test_*.py
+backend/gemini_rest
+debug_*.py
+langchain_agent_copy.txt
+/langchain_tools.py
+/test_graphiti_neo4j.py
+/test_tool.py
+/verify_data.py
+*.backup
+*.bak
+*.before-*
+*.backup.*
+backend/agent.py
+backend/answer.py
+backend/gemini_rest.py
+backend/gemini_test.py
+backend/graphiti_knowledge_test.py
+backend/llm.py
+backend/mongodb.py
+backend/query_executor.py
+backend/queryable_agent.py

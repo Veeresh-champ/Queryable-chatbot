@@ -1,0 +1,50 @@
+# Whole stack: MongoDB + FastAPI backend + Next.js frontend.
+#   cp .env.example .env   (set OPENROUTER_API_KEY)
+#   docker compose up --build        -> http://localhost:3000
+#   docker compose exec backend python -m scripts.create_user <name> --role admin
+# Only the frontend is published; it proxies /api/* to the backend.
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    # Localhost only, so the scripts/import_* loaders can seed it from the host.
+    # Set MONGO_PORT if a local MongoDB already uses 27017.
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    volumes:
+      - backend-logs:/app/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./openui_test
+      args:
+        BACKEND_URL: http://backend:8000
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mongo-data:
+  backend-logs:

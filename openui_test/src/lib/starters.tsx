@@ -1,52 +1,96 @@
 import { PromptTemplate } from "@openuidev/react-ui";
-import { GitCompareArrows, Search } from "lucide-react";
+import { BarChart3, Building2, Globe2, ShoppingCart, UserMinus } from "lucide-react";
 
-export const OPENUI_LOGOS = {
-  LIGHT: "/openui-cloud-logo-light.svg",
-  DARK: "/openui-cloud-logo-dark.svg",
+export const BRAND_LOGOS = {
+  LIGHT: "/queryable-logo-light.svg",
+  DARK: "/queryable-logo-dark.svg",
 };
 
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
-    displayText: "Research a topic",
-    prompt: "Research ",
-    icon: <Search size={16} />,
+    displayText: "Geography",
+    prompt: "",
+    icon: <Globe2 size={16} />,
     completions: [
       {
-        displayText: "The rise of reusable rockets and commercial spaceflight",
-        prompt: "the rise of reusable rockets and commercial spaceflight",
+        displayText: "Companies per country on a map",
+        prompt: "Show the number of companies per country",
         icon: <></>,
       },
       {
-        displayText: "How Formula 1 became a global business",
-        prompt: "how Formula 1 became a global business",
+        displayText: "Where are our customers?",
+        prompt: "Show the number of customers per country",
         icon: <></>,
       },
       {
-        displayText: "Why electric vehicles are changing transportation",
-        prompt: "why electric vehicles are changing transportation",
+        displayText: "Which country does a company belong to?",
+        prompt: "Which country does Professional Services Company 001 belong to?",
         icon: <></>,
       },
     ],
   },
   {
-    displayText: "Compare options",
-    prompt: "Compare ",
-    icon: <GitCompareArrows size={16} />,
+    displayText: "Companies & HR tech",
+    prompt: "",
+    icon: <Building2 size={16} />,
     completions: [
       {
-        displayText: "Leading electric vehicles for long road trips",
-        prompt: "leading electric vehicles for long road trips",
+        displayText: "Average annual HR tech spend by deployment type",
+        prompt: "Compare the average annual HR technology spend by deployment type",
         icon: <></>,
       },
       {
-        displayText: "Popular frontend frameworks for a new web app",
-        prompt: "popular frontend frameworks for a new web app",
+        displayText: "Top 5 countries by total HR tech spend",
+        prompt: "Show total annual HR tech spend by country for the top 5 countries",
         icon: <></>,
       },
       {
-        displayText: "Top destinations for a summer vacation",
-        prompt: "top destinations for a summer vacation",
+        displayText: "Most used HR technologies",
+        prompt: "Which HR technologies are used by the most companies? Show the top 8",
+        icon: <></>,
+      },
+    ],
+  },
+  {
+    displayText: "Sales & orders",
+    prompt: "",
+    icon: <ShoppingCart size={16} />,
+    completions: [
+      {
+        displayText: "Order count by status",
+        prompt: "How many orders are there in each order status?",
+        icon: <></>,
+      },
+      {
+        displayText: "Monthly revenue trend",
+        prompt: "Show total revenue per month in 2024 from sales",
+        icon: <></>,
+      },
+      {
+        displayText: "Customers by country",
+        prompt: "Show the number of customers per country",
+        icon: <></>,
+      },
+    ],
+  },
+  {
+    displayText: "IBM HR attrition",
+    prompt: "",
+    icon: <UserMinus size={16} />,
+    completions: [
+      {
+        displayText: "Attrition rate by department",
+        prompt: "What is the attrition rate by department in the IBM HR employee data?",
+        icon: <></>,
+      },
+      {
+        displayText: "Overtime vs attrition",
+        prompt: "How many IBM HR employees left, split by overtime?",
+        icon: <></>,
+      },
+      {
+        displayText: "Average monthly income by job role",
+        prompt: "Show the average monthly income by job role for IBM HR employees",
         icon: <></>,
       },
     ],
@@ -55,18 +99,28 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
 
 export const STARTERS = [
   {
-    displayText: "Relive the FIFA World Cup 2026",
-    prompt: "Relive the FIFA World Cup 2026.",
-    icon: <></>,
+    displayText: "How many companies are in India?",
+    prompt: "How many companies are in India?",
+    icon: <BarChart3 size={14} />,
   },
   {
-    displayText: "Explore global coffee trends",
-    prompt: "Explore global coffee trends.",
-    icon: <></>,
+    displayText: "Companies per country on a map",
+    prompt: "Show the number of companies per country",
+    icon: <Globe2 size={14} />,
   },
   {
-    displayText: "Help me plan my next vacation",
-    prompt: "Help me plan my next vacation.",
+    displayText: "HR tech spend by deployment type",
+    prompt: "Compare the average annual HR technology spend by deployment type",
+    icon: <BarChart3 size={14} />,
+  },
+  {
+    displayText: "IBM HR: who leaves the most?",
+    prompt: "What is the attrition rate by job role in the IBM HR employee data?",
+    icon: <BarChart3 size={14} />,
+  },
+  {
+    displayText: "Explain SaaS vs on-premise",
+    prompt: "What is the difference between SaaS and on-premise software?",
     icon: <></>,
   },
 ];

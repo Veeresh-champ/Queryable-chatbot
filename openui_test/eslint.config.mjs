@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Archived pre-refactor copies; not part of the build.
     "legacy/**",
+    // Cloudflare (OpenNext/wrangler) build output.
+    ".open-next/**",
+    ".wrangler/**",
   ]),
 ]);
 

@@ -51,3 +51,7 @@ next-env.d.ts
 
 # env templates are safe to commit
 !.env.example
+
+# cloudflare (OpenNext build output and local wrangler state)
+/.open-next/
+/.wrangler/

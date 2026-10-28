@@ -1,0 +1,26 @@
+// Cloudflare Workers config for the Next.js frontend (built with OpenNext).
+// The FastAPI backend runs elsewhere (Render); BACKEND_URL is baked into the
+// /api/* rewrite at build time, so set it before `npm run cf:deploy`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "queryable-chatbot",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "queryable-chatbot"
+    }
+  ],
+  "vars": {
+    "SESSION_COOKIE_NAME": "qc_session"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

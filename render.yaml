@@ -1,0 +1,33 @@
+# Render Blueprint for the FastAPI backend (Dashboard -> New -> Blueprint).
+# The Next.js frontend is deployed separately to Cloudflare Workers
+# (see openui_test/wrangler.jsonc) and proxies /api/* to this service.
+# Values marked sync: false are asked for once when the Blueprint is created.
+
+services:
+  - type: web
+    name: queryable-chatbot-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/livez
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: queryable_chatbot
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # The Cloudflare Workers URL of the frontend, e.g.
+      # https://queryable-chatbot.<subdomain>.workers.dev
+      - key: FRONTEND_URL
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: ALLOW_SIGNUP
+        value: "true"
+      - key: GRAPHITI_ENABLED
+        value: "false"

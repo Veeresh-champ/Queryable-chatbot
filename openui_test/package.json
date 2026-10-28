@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "openui:assets": "node scripts/generate-openui-assets.mjs",
     "openui:validate": "node scripts/validate-openui.mjs",
-    "test": "npm run typecheck && npm run lint"
+    "test": "npm run typecheck && npm run lint",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@openuidev/lang-core": "0.3.0",
@@ -25,7 +28,7 @@
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
     "lucide-react": "^0.575.0",
-    "next": "^16.3.0",
+    "next": "^16.4.2",
     "openai": "^6.49.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -37,6 +40,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.13",
     "@openuidev/cli": "0.4.1",
     "@types/d3-chord": "^3.0.6",
     "@types/d3-force": "^3.0.10",
@@ -52,8 +56,9 @@
     "@types/three": "^0.180.0",
     "@types/topojson-client": "^3.1.5",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0",
-    "typescript": "^5"
+    "eslint-config-next": "^16.4.2",
+    "typescript": "^5",
+    "wrangler": "^4.154.0"
   },
   "allowScripts": {
     "@openuidev/lang-core": true,

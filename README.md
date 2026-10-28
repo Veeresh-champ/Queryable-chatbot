@@ -145,6 +145,31 @@ For production, set `COOKIE_SECURE=true` and `ALLOW_SIGNUP=false`, put HTTPS in 
 
 ---
 
+## Deploy (Cloudflare + Render + MongoDB Atlas)
+
+| Part | Where | Config |
+|---|---|---|
+| Database | MongoDB Atlas (free M0) | connection string → `MONGODB_URI` |
+| Backend (FastAPI) | Render (free, Docker) | [`render.yaml`](render.yaml) |
+| Frontend (Next.js) | Cloudflare Workers via OpenNext | [`openui_test/wrangler.jsonc`](openui_test/wrangler.jsonc) |
+
+1. **Atlas:** create a free cluster, a database user, and allow network access from `0.0.0.0/0`. Load the data from your machine:
+   ```bash
+   MONGODB_URI="mongodb+srv://..." python -m scripts.import_span_companies   # same for import_ibm_hr, import_kaggle_ecommerce
+   MONGODB_URI="mongodb+srv://..." python -m scripts.create_user admin --role admin
+   ```
+2. **Render:** Dashboard → New → Blueprint → pick this repo. Fill in `MONGODB_URI`, `OPENROUTER_API_KEY` and `FRONTEND_URL` (the Cloudflare URL from step 3; update it after the first deploy).
+3. **Cloudflare:** the frontend's `/api/*` rewrite is fixed at build time, so pass the Render URL when deploying:
+   ```bash
+   cd openui_test
+   npx wrangler login
+   BACKEND_URL=https://queryable-chatbot-api.onrender.com npm run cf:deploy
+   ```
+
+The free Render service sleeps after ~15 minutes idle; the first request afterwards takes 30–60 s.
+
+---
+
 ## Sample datasets
 
 | Collection | Rows | Source |

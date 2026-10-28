@@ -55,8 +55,14 @@ def streaming(*outputs):
 
 @pytest.fixture()
 def mocks(monkeypatch, mongo):
+    from dataclasses import replace
+
     from backend import langchain_agent
 
+    # Jev routing only runs when a key is configured; a dummy key keeps these
+    # tests independent of the developer's .env (Jev itself is mocked).
+    monkeypatch.setattr(chat_service, "settings",
+                        replace(chat_service.settings, jev_enabled=True, openrouter_api_key="test-key"))
     monkeypatch.setattr(chat_service, "route_question", jev("database_query"))
     monkeypatch.setattr(langchain_agent, "generate_database_query", lambda q, repair=None: dict(QUERY))
     return monkeypatch

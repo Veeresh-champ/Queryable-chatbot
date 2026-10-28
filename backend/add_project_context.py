@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
-from graphiti_service import GraphitiService
+from backend.graphiti_service import GraphitiService
 
 
 load_dotenv()

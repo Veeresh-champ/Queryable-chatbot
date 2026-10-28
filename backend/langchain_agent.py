@@ -4,7 +4,7 @@ import time
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_tools import query_mongodb
+from backend.langchain_tools import query_mongodb
 from backend.schema_discovery import get_schema
 from backend.config import openrouter_speed_options, settings
 from backend.geo import query_hints

@@ -5,6 +5,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "queryable-chatbot",
   "main": ".open-next/worker.js",
+  // Needed to stay under the 3 MiB (gzip) Worker size limit on the free plan.
+  "minify": true,
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {

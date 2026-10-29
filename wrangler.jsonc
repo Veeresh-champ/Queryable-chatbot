@@ -1,0 +1,34 @@
+// Root config so Cloudflare Workers Builds can deploy from the repository root
+// (Root directory "/", deploy command "npx wrangler deploy"). It builds the
+// Next.js frontend in openui_test/ with OpenNext, then deploys that bundle.
+// Keep the bindings below in sync with openui_test/wrangler.jsonc.
+// BACKEND_URL is baked into the /api/* rewrite at build time; set it as a
+// Cloudflare build variable to point at your Render backend.
+{
+  "$schema": "openui_test/node_modules/wrangler/config-schema.json",
+  "name": "queryable-chatbot",
+  "main": "openui_test/.open-next/worker.js",
+  // Needed to stay under the 3 MiB (gzip) Worker size limit on the free plan.
+  "minify": true,
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "build": {
+    "command": "cd openui_test && npm ci --no-audit --no-fund && BACKEND_URL=${BACKEND_URL:-https://queryable-chatbot-api.onrender.com} npx opennextjs-cloudflare build"
+  },
+  "assets": {
+    "directory": "openui_test/.open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "queryable-chatbot"
+    }
+  ],
+  "vars": {
+    "SESSION_COOKIE_NAME": "qc_session"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

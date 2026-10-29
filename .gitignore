@@ -66,3 +66,7 @@ backend/llm.py
 backend/mongodb.py
 backend/query_executor.py
 backend/queryable_agent.py
+
+# Cloudflare / OpenNext build output
+.open-next/
+.wrangler/

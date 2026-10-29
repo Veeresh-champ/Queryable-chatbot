@@ -159,7 +159,9 @@ For production, set `COOKIE_SECURE=true` and `ALLOW_SIGNUP=false`, put HTTPS in 
    MONGODB_URI="mongodb+srv://..." python -m scripts.create_user admin --role admin
    ```
 2. **Render:** Dashboard → New → Blueprint → pick this repo. Fill in `MONGODB_URI`, `OPENROUTER_API_KEY` and `FRONTEND_URL` (the Cloudflare URL from step 3; update it after the first deploy).
-3. **Cloudflare:** the frontend's `/api/*` rewrite is fixed at build time, so pass the Render URL when deploying:
+3. **Cloudflare (Git builds):** connect this repo to a Worker named `queryable-chatbot` with Root directory `/`, no build command, and deploy command `npx wrangler deploy`. The root [`wrangler.jsonc`](wrangler.jsonc) builds `openui_test/` with OpenNext and deploys it. The `/api/*` rewrite is fixed at build time, so add a build variable `BACKEND_URL` set to your Render URL (it defaults to `https://queryable-chatbot-api.onrender.com`).
+
+   **Or deploy from your machine:**
    ```bash
    cd openui_test
    npx wrangler login

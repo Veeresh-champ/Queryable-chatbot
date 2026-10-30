@@ -202,12 +202,13 @@ def validate_pipeline(pipeline):
             if not isinstance(stage_value, dict):
                 return False
 
-            if set(stage_value) - {"from", "pipeline", "as"}:
+            if set(stage_value) - {"from", "localField", "foreignField", "pipeline", "as"}:
                 return False
 
             foreign_collection = stage_value.get("from")
             output_field = stage_value.get("as")
             nested_pipeline = stage_value.get("pipeline")
+            join_fields = [stage_value.get(k) for k in ("localField", "foreignField")]
 
             if foreign_collection not in schema:
                 return False
@@ -219,7 +220,18 @@ def validate_pipeline(pipeline):
             ):
                 return False
 
-            if not validate_pipeline(nested_pipeline):
+            # Equality join (localField/foreignField), a sub-pipeline, or both.
+            has_join = any(field is not None for field in join_fields)
+            if has_join and not all(
+                isinstance(field, str) and field and not field.startswith("$")
+                for field in join_fields
+            ):
+                return False
+
+            if nested_pipeline is None:
+                if not has_join:
+                    return False
+            elif not validate_pipeline(nested_pipeline):
                 return False
 
         elif stage_name == "$match":

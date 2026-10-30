@@ -106,6 +106,24 @@ def test_validator_rejects_bad_count_stage(mongo, value):
     assert not validate_query(dict(VALID, pipeline=[{"$count": value}]))
 
 
+def test_validator_accepts_equality_lookup(mongo):
+    lookup = {"from": "span_companies", "localField": "_id", "foreignField": "country", "as": "c"}
+    assert validate_query(dict(VALID, pipeline=[{"$lookup": lookup}]))
+
+
+@pytest.mark.parametrize(
+    "lookup",
+    [
+        {"from": "app_users", "localField": "_id", "foreignField": "username", "as": "u"},
+        {"from": "span_companies", "localField": "_id", "as": "c"},
+        {"from": "span_companies", "localField": "$x", "foreignField": "country", "as": "c"},
+        {"from": "span_companies", "as": "c"},
+    ],
+)
+def test_validator_rejects_bad_equality_lookup(mongo, lookup):
+    assert not validate_query(dict(VALID, pipeline=[{"$lookup": lookup}]))
+
+
 def test_validator_rejects_internal_collections(mongo):
     for name in ["app_users", "app_sessions", "chat_threads"]:
         assert not validate_query({"collection": name, "operation": "find", "filters": {}, "fields": []})

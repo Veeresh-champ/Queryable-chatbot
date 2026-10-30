@@ -97,6 +97,15 @@ def test_validator_rejects_write_and_code_stages(mongo, stage):
     assert not validate_query(query)
 
 
+def test_validator_accepts_count_stage(mongo):
+    assert validate_query(dict(VALID, pipeline=[{"$match": {"country": "India"}}, {"$count": "count"}]))
+
+
+@pytest.mark.parametrize("value", ["", "$x", "a.b", 1, {"x": 1}])
+def test_validator_rejects_bad_count_stage(mongo, value):
+    assert not validate_query(dict(VALID, pipeline=[{"$count": value}]))
+
+
 def test_validator_rejects_internal_collections(mongo):
     for name in ["app_users", "app_sessions", "chat_threads"]:
         assert not validate_query({"collection": name, "operation": "find", "filters": {}, "fields": []})

@@ -11,7 +11,7 @@ ALLOWED_FILTER_OPERATORS = {
 
 ALLOWED_PIPELINE_STAGES = {
     "$match", "$group", "$sort", "$limit", "$skip",
-    "$project", "$unwind", "$facet", "$addFields", "$lookup",
+    "$project", "$unwind", "$facet", "$addFields", "$lookup", "$count",
 }
 
 ALLOWED_GROUP_OPERATORS = {
@@ -271,6 +271,15 @@ def validate_pipeline(pipeline):
                 return False
 
             if stage_name == "$limit" and stage_value == 0:
+                return False
+
+        elif stage_name == "$count":
+            if (
+                not isinstance(stage_value, str)
+                or not stage_value
+                or stage_value.startswith("$")
+                or "." in stage_value
+            ):
                 return False
 
         elif stage_name == "$unwind":

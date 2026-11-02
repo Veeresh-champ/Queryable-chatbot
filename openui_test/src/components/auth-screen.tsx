@@ -89,7 +89,7 @@ function Showcase() {
   return (
     <aside className="auth-showcase" aria-hidden="true">
       <div className="auth-showcase__inner">
-        {BRAND.logo.dark && (
+        {BRAND.id && BRAND.logo.dark && (
           <img className="auth-showcase__logo" src={BRAND.logo.dark} alt={BRAND.logo.alt} width={BRAND.logo.width} height={BRAND.logo.height} />
         )}
         <p className="auth-showcase__eyebrow">{BRAND.showcase.eyebrow}</p>

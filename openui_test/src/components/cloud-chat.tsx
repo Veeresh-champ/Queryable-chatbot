@@ -36,7 +36,9 @@ import { VoiceDock } from "@/components/voice-dock";
 import { useLocalStorage } from "@/lib/use-browser";
 import { authFetch, fetchCurrentUser, logout, type SessionUser } from "@/lib/api";
 import { artifactStorage } from "@/lib/artifact-storage";
-import { queryableDarkTheme, queryableLightTheme } from "@/lib/theme";
+import { brandLightTheme, queryableDarkTheme, queryableLightTheme } from "@/lib/theme";
+import { BRAND } from "@/lib/brand";
+import { WorkspaceStats } from "@/components/workspace-stats";
 import { BRAND_LOGOS, PROMPT_TEMPLATES, STARTERS } from "@/lib/starters";
 
 const MODEL_STORAGE_KEY = "queryable-chat-model";
@@ -86,7 +88,8 @@ function toModelOptions(ids: string[]): ModelOption[] {
 export default function CloudChat() {
   const systemMode = useSystemThemeMode();
   const [savedTheme, setSavedTheme] = useLocalStorage("queryable-chat-theme");
-  const mode = savedTheme === "dark" || savedTheme === "light" ? savedTheme : systemMode;
+  // Brand editions are light only.
+  const mode = BRAND.id ? "light" : savedTheme === "dark" || savedTheme === "light" ? savedTheme : systemMode;
 
   const [user, setUser] = useState<SessionUser | null>(null);
   const [models, setModels] = useState<ModelOption[]>([]);
@@ -147,10 +150,10 @@ export default function CloudChat() {
     [],
   );
 
-  const logoPath = mode === "dark" ? BRAND_LOGOS.DARK : BRAND_LOGOS.LIGHT;
+  const logoPath = BRAND.id ? BRAND.logo.light : mode === "dark" ? BRAND_LOGOS.DARK : BRAND_LOGOS.LIGHT;
 
   const nextMode = mode === "dark" ? "light" : "dark";
-  const themeToggle = (
+  const themeToggle = BRAND.id ? null : (
     <button
       className="qc-icon-button"
       type="button"
@@ -197,12 +200,12 @@ export default function CloudChat() {
           artifactCategories={artifactCategories}
           labels={labels}
           logoUrl={logoPath}
-          agentName="Queryable Chatbot"
-          theme={{ mode, darkTheme: queryableDarkTheme, lightTheme: queryableLightTheme }}
-          starters={STARTERS}
+          agentName={BRAND.productName}
+          theme={{ mode, darkTheme: queryableDarkTheme, lightTheme: brandLightTheme ?? queryableLightTheme }}
+          starters={BRAND.starters ? BRAND.starters.map((starter) => ({ ...starter, icon: <BarChart3 size={14} /> })) : STARTERS}
           scrollVariant="always"
         >
-          {renderSidebar({ user, mode, onToggleTheme: () => setSavedTheme(nextMode) })}
+          {renderSidebar({ user, mode, onToggleTheme: BRAND.id ? undefined : () => setSavedTheme(nextMode) })}
 
           <AgentInterface.Route path={TOOL_ROUTES.search}>
             <SearchPage />
@@ -248,7 +251,7 @@ export default function CloudChat() {
           </AgentInterface.Route>
 
           <AgentInterface.MobileHeader
-            agentName="Queryable Chatbot"
+            agentName={BRAND.productName}
             actions={
               <>
                 {mobileTools}
@@ -261,9 +264,11 @@ export default function CloudChat() {
           </AgentInterface.ThreadHeader>
 
           <AgentInterface.Welcome
-            title={user ? `Good to see you, ${user.display_name.split(" ")[0]}` : "Queryable Chatbot"}
-            description="Ask about companies, customers, orders, products and sales. Every number comes straight from your MongoDB data."
-            promptTemplates={PROMPT_TEMPLATES}
+            title={user ? `Good to see you, ${user.display_name.split(" ")[0]}` : BRAND.productName}
+            description={BRAND.welcome}
+            image={BRAND.id ? <WorkspaceStats enabled={user !== null} /> : undefined}
+            // The neutral categories describe the demo datasets, not a brand's data.
+            promptTemplates={BRAND.id ? undefined : PROMPT_TEMPLATES}
           />
 
           <VoiceDock />

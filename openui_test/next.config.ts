@@ -53,7 +53,13 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: CSP },
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
+          // Brand editions frame their own chat on /embed-preview, so same-origin
+          // framing is allowed there; the neutral build keeps DENY.
+          { key: "X-Frame-Options", value: process.env.NEXT_PUBLIC_BRAND ? "SAMEORIGIN" : "DENY" },
+          // The launcher may also sit on the brand's own websites.
+          ...(process.env.NEXT_PUBLIC_BRAND
+            ? [{ key: "Content-Security-Policy", value: "frame-ancestors 'self' https://*.lakeb2b.com https://*.spanglobalservices.com" }]
+            : []),
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "Permissions-Policy", value: "microphone=(self), camera=(), geolocation=()" },
           // Browsers ignore HSTS on plain HTTP, so this is safe on localhost.

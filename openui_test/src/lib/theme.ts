@@ -1,5 +1,7 @@
 import { createTheme } from "@openuidev/react-ui";
 
+import { BRAND } from "@/lib/brand";
+
 /**
  * Queryable Chatbot tokens for OpenUI's ThemeProvider (passed through
  * <AgentInterface theme={...}>). Surfaces are translucent warm onyx so the
@@ -95,3 +97,66 @@ export const queryableLightTheme = createTheme({
   chatUserResponseBg: "rgba(154, 107, 18, 0.1)",
   chatUserResponseText: "#1c1710",
 });
+
+/**
+ * Brand editions are light only. Same shape as the light theme, with the
+ * brand's ink, accent and chart palette (brand skills: lakeb2b, span).
+ * Matching CSS tokens live in app/brand.css.
+ */
+const brandTheme = (b: {
+  series: string[];
+  ink: [string, string, string];
+  accent: [string, string, string];
+  line: string;
+  ground: string;
+  userBg: string;
+}) =>
+  createTheme({
+    ...palettes(b.series),
+    ...typography,
+    background: b.ground,
+    foreground: "#ffffff",
+    popoverBackground: "#ffffff",
+    sunkLight: b.ground,
+    sunk: "#ffffff",
+    elevated: "#ffffff",
+    highlightSubtle: `color-mix(in srgb, ${b.ink[0]} 3%, transparent)`,
+    highlight: `color-mix(in srgb, ${b.ink[0]} 6%, transparent)`,
+    highlightStrong: `color-mix(in srgb, ${b.ink[0]} 10%, transparent)`,
+    textNeutralPrimary: b.ink[0],
+    textNeutralSecondary: b.ink[1],
+    textNeutralTertiary: b.ink[2],
+    textNeutralLink: b.accent[0],
+    textBrand: b.accent[0],
+    textAccentPrimary: "#ffffff",
+    interactiveAccentDefault: b.accent[0],
+    interactiveAccentHover: b.accent[1],
+    interactiveAccentPressed: b.accent[2],
+    borderDefault: b.line,
+    borderInteractive: b.line,
+    borderInteractiveEmphasis: b.ink[2],
+    borderAccent: b.accent[0],
+    chatUserResponseBg: b.userBg,
+    chatUserResponseText: b.ink[0],
+  });
+
+const lakeTheme = brandTheme({
+  series: ["#6D08BE", "#DD1286", "#0095A0", "#7A76DA", "#FF6903", "#011A6B", "#C1003C", "#FFB703"],
+  ink: ["#011A6B", "#36457F", "#525E8C"],
+  accent: ["#6D08BE", "#5A06A0", "#4A0585"],
+  line: "#DCE0EC",
+  ground: "#FFFFFF",
+  userBg: "#F1E8FA",
+});
+
+const spanTheme = brandTheme({
+  series: ["#1B6B3A", "#3DBE6E", "#00D4AA", "#0F2B3C", "#F5A623", "#2D9B55", "#1A3A4A", "#4D6070"],
+  ink: ["#1E2A32", "#4D6070", "#56697A"],
+  accent: ["#1B6B3A", "#2D9B55", "#155A30"],
+  line: "#D9E3E9",
+  ground: "#F5F7F9",
+  userBg: "#E8F5EE",
+});
+
+/** The brand edition's light theme, or null for the neutral build. */
+export const brandLightTheme = BRAND.id === "lake" ? lakeTheme : BRAND.id === "span" ? spanTheme : null;

@@ -13,7 +13,7 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "build": {
-    "command": "cd openui_test && npm ci --no-audit --no-fund && BACKEND_URL=${BACKEND_URL:-https://queryable-chatbot-api.onrender.com} npx opennextjs-cloudflare build"
+    "command": "cd openui_test && npm ci --no-audit --no-fund && NODE_OPTIONS=--max-old-space-size=6144 BACKEND_URL=${BACKEND_URL:-https://queryable-chatbot-api.onrender.com} npx opennextjs-cloudflare build"
   },
   "assets": {
     "directory": "openui_test/.open-next/assets",

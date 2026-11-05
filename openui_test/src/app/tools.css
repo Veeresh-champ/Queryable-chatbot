@@ -931,3 +931,30 @@
 @media (min-width: 1100px) {
   .qc-kpi-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* Sidebar scrolling: with Tools, Artifacts and Admin open, the chat history
+   used to be squeezed to zero height. The history keeps its own scroll (it
+   loads older chats as you scroll) with a guaranteed height, and the whole
+   rail scrolls when the sections above it are tall. */
+.qc-app .openui-agent-sidebar-container:not(.openui-agent-sidebar-container--collapsed) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.qc-app .openui-agent-sidebar-container:not(.openui-agent-sidebar-container--collapsed) > * { flex-shrink: 0; }
+.qc-app .openui-agent-sidebar-container:not(.openui-agent-sidebar-container--collapsed) > .qc-side-recents {
+  flex: 1 0 280px;
+  min-height: 280px;
+}
+.qc-app .qc-side-user { position: sticky; bottom: 0; z-index: 1; background: var(--qc-panel); backdrop-filter: var(--qc-glass-blur); }
+
+/* Every scrolling area uses the theme's own scrollbar colours (no white
+   default track): the standard properties apply in Chrome, Edge and
+   Firefox alike, and are inherited by every element in the app. */
+.qc-app {
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track, transparent);
+  scrollbar-width: thin;
+}
+.qc-app ::-webkit-scrollbar-corner { background: transparent; }
+/* Native controls (dropdown lists, date pickers, scrollbars) follow the theme. */
+.qc-app { color-scheme: dark; }
+.qc-app[data-theme="light"] { color-scheme: light; }

@@ -96,7 +96,7 @@ export function ChatFileDrop({ enabled }: { enabled: boolean }) {
           <div>
             <FileSpreadsheet size={34} />
             <strong>Drop to add as a dataset</strong>
-            <span>Excel (.xlsx) or CSV · the chatbot can query it right after import</span>
+            <span>CSV, TSV, TXT, Excel or JSON · save it or use it without saving</span>
           </div>
         </div>
       )}

@@ -15,6 +15,11 @@ The chatbot turns each question into a **validated, read-only MongoDB query**, r
 - **Smart routing:** Jev (via OpenRouter) decides whether a question needs the database; a LangChain classifier is the fallback.
 - **Rich answers:** streamed OpenUI components, with a query inspector that shows the exact query that ran.
 - **Built-in tools:** insights dashboard, analytics lab, geo explorer, data catalog, usage stats, and voice input.
+- **Projects:** the Data catalog groups datasets into projects (like chats inside a Claude project), with tags, categories, search and tag filters. Admins switch a project **on/off** and can limit it to selected members; the backend enforces both. Pick a project in the chat header and answers use only that project's active, authorised datasets.
+- **Safe dataset uploads:** CSV, TSV, TXT, Excel (.xlsx) and JSON / JSON Lines. After the preview choose **Save** or **Use without saving** (queryable at once, deleted automatically after 24 hours unless you press **Keep** in the Data catalog). Every preview shows a data-quality report (empty/sparse columns, duplicates, identical columns, mixed units, broken characters). Text such as `1,000+`, `$1.26B` or `100K–300K` gets a numeric `_num` twin (the lower bound actually written; ambiguous money values stay empty). Rows go to a staging collection and are swapped in only after a complete write.
+- **Opportunities:** suggests use cases from value-added fields (international payroll, pre-renewal campaigns, digital capability gaps, multi-site operations, fast growth, enterprise accounts, payments, CX, cloud migration), each with the field and value behind it. Match a customer profile (industry, location, size, revenue, growth) to rank accounts with a drop-out funnel. Missing data is reported as unknown or "needs data", never filled in. Ask "what opportunities are in this data?" in chat for the same, grounded answer; data answers also suggest next steps.
+- **Analytics lab:** one lab for every project. Company data opens with a portfolio (opportunity constellation, account galaxy, radial ranking, countries × datasets chord, capability gaps, data health); every dataset has a deep dive (category sunburst, outcome rose, correlation web, distribution ridgelines, time spiral, record swarm). All animated, all computed from MongoDB.
+- **Insights studio:** auto-built dashboards for any project or dataset, each chart with a one-line headline: 3D globe, dot matrix, nested circles, bubbles, distribution wave, range capsules, concentration ring, radial top list, capability rings, field-coverage honeycomb, plus animated trend, scatter, flow and comparison. Every chart has a table view and CSV export.
 - **Artifacts library:** every chart, map, insight set and query an answer produces is saved. Browse and search them from **Artifacts** in the sidebar (Charts & insights · Maps · Queries), or open the current chat's artifacts from the workspace rail on the right.
 - **Admin console:** for `admin` users, a sidebar **Admin console** with workspace KPIs and 14-day activity, user management (add users, change role/plan, disable, reset password, sign out), feedback review, an audit log of admin actions, and service health.
 - **Accounts:** login and sign-up, saved conversations, plans with daily limits, and personal API keys (`qc-...`).
@@ -92,6 +97,17 @@ python -m scripts.import_kaggle_ecommerce   # customers, orders ... -> 5 collect
 ```
 
 Each script replaces its collections, so it is safe to run again.
+
+Optional: load the VAF samples workbook (one dataset per industry sheet, in the project "VAF samples"):
+
+```bash
+python -m scripts.import_vaf_workbook "path/to/VAF samples.xlsx" --dry-run   # quality report only
+python -m scripts.import_vaf_workbook "path/to/VAF samples.xlsx"             # all six sheets
+python -m scripts.import_vaf_workbook "path/to/file.xlsx" --sheet "2_Insurance"             # one industry
+python -m scripts.import_vaf_workbook "path/to/file.xlsx" --remove                          # undo
+```
+
+On first start the backend creates default projects for the sample data (SPAN HR-tech market, E-commerce sales, People analytics).
 
 ### 5. Run the app
 
@@ -231,6 +247,9 @@ The interactive docs are at **<http://127.0.0.1:8000/docs>** while the backend r
 | `/api/artifacts/*` | Saved artifacts (list, search, open, rename, delete) |
 | `/api/admin/*` | Admin console: overview, users, audit log (admins only) |
 | `/api/insights/overview`, `/api/analytics/lab`, `/api/geo/*`, `/api/catalog` | Dashboard tools |
+| `/api/projects/*`, `/api/catalog-meta/{name}` | Projects: list, create, on/off, access, datasets, tags (admin writes) |
+| `/api/dashboard?project=&collection=` | Auto-built charts for a project or dataset |
+| `/api/opportunities`, `/api/opportunities/match` | Use cases with evidence; customer-profile matching |
 | `/api/livez`, `/api/readyz`, `/api/health` | Health probes |
 
 You can call the API with a personal key from **Settings → API keys**:
@@ -247,7 +266,7 @@ curl http://127.0.0.1:8000/ask \
 ## Testing
 
 ```bash
-python -m pytest                  # backend: 135 tests, needs MongoDB running
+python -m pytest                  # backend: 206 tests, needs MongoDB running
 cd openui_test
 npm run typecheck && npm run lint # frontend
 ```
@@ -278,6 +297,10 @@ Queryable-chatbot/
 │   ├── artifacts.py         saved charts/maps/queries (Artifacts library)
 │   ├── admin.py             admin console API
 │   ├── insights.py, analytics.py, hr_analytics.py, geo.py
+│   ├── projects.py          projects, on/off, access control, tags
+│   ├── profiling.py         field roles + one record per account
+│   ├── dashboard.py         auto-built project/dataset charts
+│   ├── opportunities.py     use cases, evidence, customer-profile matching
 │   └── openui/              OpenUI component library + system prompt
 ├── openui_test/             Next.js frontend
 │   ├── src/app/             pages (chat, login, signup)

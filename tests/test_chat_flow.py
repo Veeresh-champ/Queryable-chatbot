@@ -248,8 +248,11 @@ def test_conversation_is_saved_per_user(logged_in, mocks, app_client):
     _, _, _, thread_id = ask(logged_in, "Average spend by deployment type?")
     saved = logged_in.get(f"/api/threads/get/{thread_id}").json()
     roles = [m["role"] for m in saved]
-    assert roles[0] == "user" and "tool" in roles and roles[-1] == "assistant"
-    assert saved[-1]["content"].startswith("root = Card(")
+    assert roles[0] == "user" and "tool" in roles
+    texts = [m for m in saved if m["role"] == "assistant" and m.get("content")]
+    assert texts[-1]["content"].startswith("root = Card(")
+    # The report artifact (Claude-style) closes the turn, after the answer text.
+    assert saved[-1]["role"] == "tool" and '"artifact_id"' in saved[-1]["content"]
     listed = logged_in.get("/api/threads/get").json()["threads"]
     assert any(t["id"] == thread_id for t in listed)
 

@@ -561,6 +561,44 @@ Present this result as OpenUI Lang:
     return _with_history(history) + [{"role": "user", "content": content}]
 
 
+def opportunity_messages(question, summary, history=None):
+    """Prompt for "what opportunities / use cases / next steps" questions.
+
+    ``summary`` comes from backend.opportunities.chat_summary: every number
+    and account in it is computed from MongoDB with the evidence attached.
+    """
+
+    payload = json.dumps(summary, default=str, ensure_ascii=False)
+    if len(payload) > MAX_RESULT_CHARS_FOR_LLM:
+        trimmed = dict(summary)
+        trimmed["use_cases"] = [{**c, "top_accounts": c["top_accounts"][:2]} for c in summary["use_cases"]]
+        payload = json.dumps(trimmed, default=str, ensure_ascii=False)[:MAX_RESULT_CHARS_FOR_LLM]
+
+    content = f"""USER QUESTION:
+{question}
+
+The opportunity engine scanned the datasets this user may read and matched value-added
+fields (VAFs) to business use cases. Its findings, computed from the database:
+<<<OPPORTUNITY FINDINGS
+{payload}
+OPPORTUNITY FINDINGS>>>
+
+Present this as OpenUI Lang for a sales or marketing lead:
+- Lead with a direct answer: the 2-3 strongest use cases (status "ready") and why.
+- For each: who it suits ("for"), how many accounts qualify out of how many, 2-3 example accounts
+  with their evidence exactly as given, the recommended action and the timing.
+- Use cases with status "needs_data" or "no_matches": say plainly which field is missing. Never
+  suggest accounts or numbers for them.
+- Use ONLY names, values and counts from the OPPORTUNITY FINDINGS. Do not invent accounts, revenue,
+  contract dates or percentages. If the question asks for something the findings do not contain, say so.
+- End with a FollowUpBlock of 2-3 follow-ups (for example a customer profile to match, or one use case
+  to drill into).
+
+{POSITIONAL_REMINDERS}
+"""
+    return _with_history(history) + [{"role": "user", "content": content}]
+
+
 def general_messages(question, history=None, extra_context=None, browser=False):
     notes = []
     if browser:

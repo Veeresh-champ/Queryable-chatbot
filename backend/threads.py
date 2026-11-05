@@ -65,7 +65,7 @@ def get_owned(thread_id, username):
     return doc
 
 
-def save_messages(thread_id, username, messages, meta=None):
+def save_messages(thread_id, username, messages, meta=None, project=None):
     """Store the thread's messages.
 
     ``meta`` maps an assistant message id to server-side facts about how it
@@ -74,6 +74,8 @@ def save_messages(thread_id, username, messages, meta=None):
     """
 
     update = {"messages": messages[-MAX_MESSAGES:], "updatedAt": _now_ms()}
+    if project:
+        update["project"] = project  # the chat lives inside this project (Projects page lists it)
     for message_id, info in (meta or {}).items():
         update[f"meta.{message_id}"] = info
     threads.update_one({"_id": thread_id, "username": username}, {"$set": update})

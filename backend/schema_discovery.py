@@ -16,20 +16,30 @@ _cache = {"schema": None, "expires": 0.0}
 _cache_lock = threading.Lock()
 
 
-def get_schema():
+def get_schema(all_collections=False):
+    """Fields of every collection the current request may read.
+
+    The cache holds every business collection; the result is narrowed on
+    each call by ``business_collection_names`` (projects switched off, the
+    user's permissions and the chat's project scope). ``all_collections``
+    skips that narrowing, for the admin Data catalog only.
+    """
+
     now = time.monotonic()
 
     with _cache_lock:
-        if _cache["schema"] is not None and now < _cache["expires"]:
-            return copy.deepcopy(_cache["schema"])
+        cached = _cache["schema"] if _cache["schema"] is not None and now < _cache["expires"] else None
 
-    schema = _discover_schema()
+    if cached is None:
+        cached = _discover_schema()
+        with _cache_lock:
+            _cache["schema"] = cached
+            _cache["expires"] = time.monotonic() + SCHEMA_CACHE_SECONDS
 
-    with _cache_lock:
-        _cache["schema"] = schema
-        _cache["expires"] = time.monotonic() + SCHEMA_CACHE_SECONDS
-
-    return copy.deepcopy(schema)
+    if all_collections:
+        return copy.deepcopy(cached)
+    allowed = set(business_collection_names())
+    return copy.deepcopy({name: fields for name, fields in cached.items() if name in allowed})
 
 
 def clear_schema_cache():
@@ -41,7 +51,7 @@ def clear_schema_cache():
 def _discover_schema():
     schema = {}
 
-    for collection_name in business_collection_names():
+    for collection_name in business_collection_names(include_disabled=True, scoped=False):
         collection = db[collection_name]
         fields = {}
 

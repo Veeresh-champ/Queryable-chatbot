@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Database, Globe2, LogOut, Moon, Sun } from "lucide-react";
+import { BarChart3, Database, FileBarChart, Globe2, LogOut, Moon, Sun } from "lucide-react";
 import {
   AgentInterface,
-  ModelSwitcher,
   agUIAdapter,
   fetchLLM,
   identityMessageFormat,
@@ -15,7 +14,9 @@ import {
 import type { ArtifactCategory } from "@openuidev/react-headless";
 import { openuiChatLibrary } from "@openuidev/react-ui/genui-lib";
 
-import { dataInsightsRenderer, geoMapRenderer, visualAnalysisRenderer } from "@/components/analysis-renderers";
+import { dataInsightsRenderer, geoMapRenderer, opportunitiesRenderer, visualAnalysisRenderer } from "@/components/analysis-renderers";
+import { reportRenderer } from "@/components/report-artifact";
+import { OpportunitiesPage } from "@/components/tools/opportunities-page";
 import { QueryableAssistantMessage } from "@/components/assistant-message";
 import { renderSidebar, SettingsButton, TOOL_ROUTES } from "@/components/app-sidebar";
 import { artifactRenderers as queryRenderers } from "@/components/query-inspector";
@@ -26,7 +27,7 @@ import { IntegrationsPage } from "@/components/tools/integrations-page";
 import { AnalyticsLabPage } from "@/components/tools/analytics-lab-page";
 import { CatalogPage } from "@/components/tools/catalog-page";
 import { GeoExplorerPage } from "@/components/tools/geo-explorer-page";
-import { InsightsPage } from "@/components/tools/insights-page";
+import { InsightsPage } from "@/components/tools/project-dashboard";
 import { PromptsPage } from "@/components/tools/prompts-page";
 import { SearchPage } from "@/components/tools/search-page";
 import { SettingsPage } from "@/components/tools/settings-page";
@@ -41,11 +42,12 @@ import { BRAND_LOGOS, PROMPT_TEMPLATES, STARTERS } from "@/lib/starters";
 const MODEL_STORAGE_KEY = "queryable-chat-model";
 
 // Captured once at mount by ChatProvider, so it must be a stable module constant.
-const artifactRenderers = [...queryRenderers, geoMapRenderer, visualAnalysisRenderer, dataInsightsRenderer];
+const artifactRenderers = [reportRenderer, ...queryRenderers, geoMapRenderer, visualAnalysisRenderer, dataInsightsRenderer, opportunitiesRenderer];
 // Sidebar "Artifacts" library: each category is one nav item and one section
 // of the per-conversation workspace rail. Types match the renderers above and
 // backend/artifacts.py TOOL_TYPES.
 const artifactCategories: ArtifactCategory[] = [
+  { name: "Reports", filter: { type: ["qc_report"] }, icon: <FileBarChart size={16} /> },
   { name: "Charts & insights", filter: { type: ["qc_visual_analysis", "qc_data_insights"] }, icon: <BarChart3 size={16} /> },
   { name: "Maps", filter: { type: ["qc_geo_map"] }, icon: <Globe2 size={16} /> },
   { name: "Queries", filter: { type: ["qc_mongodb_query"] }, icon: <Database size={16} /> },
@@ -134,6 +136,8 @@ export default function CloudChat() {
         streamAdapter: agUIAdapter(),
         messageFormat: identityMessageFormat,
         fetch: authFetch,
+        // No project on the chat: answers read every active dataset the
+        // user may use (the backend applies projects' on/off and access).
         body: selectedModel ? { model: selectedModel } : {},
       }),
     [selectedModel],
@@ -145,11 +149,6 @@ export default function CloudChat() {
   );
 
   const logoPath = mode === "dark" ? BRAND_LOGOS.DARK : BRAND_LOGOS.LIGHT;
-
-  const modelSwitcher =
-    models.length > 0 && selectedModel ? (
-      <ModelSwitcher models={models} value={selectedModel} onValueChange={chooseModel} />
-    ) : null;
 
   const nextMode = mode === "dark" ? "light" : "dark";
   const themeToggle = (
@@ -215,6 +214,9 @@ export default function CloudChat() {
           <AgentInterface.Route path={TOOL_ROUTES.insights}>
             <InsightsPage />
           </AgentInterface.Route>
+          <AgentInterface.Route path={TOOL_ROUTES.opportunities}>
+            <OpportunitiesPage />
+          </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.geo}>
             <GeoExplorerPage />
           </AgentInterface.Route>
@@ -256,14 +258,12 @@ export default function CloudChat() {
             agentName="Queryable Chatbot"
             actions={
               <>
-                {modelSwitcher}
                 {mobileTools}
               </>
             }
           />
 
           <AgentInterface.ThreadHeader className="qc-thread-header">
-            {modelSwitcher}
             {headerTools}
           </AgentInterface.ThreadHeader>
 

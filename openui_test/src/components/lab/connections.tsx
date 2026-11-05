@@ -365,7 +365,14 @@ export function AdoptionNetwork({ data, points, focus, onFocus, visible }: ViewP
 /* ------------------------------------------------------------------ Chord */
 
 /** Country ↔ technology-category spend connections. */
-export function ChordView({ data, focus, onFocus, visible }: Omit<ViewProps, "points"> & { data: ChordData }) {
+export function ChordView({
+  data,
+  focus,
+  onFocus,
+  visible,
+  valueText = money,
+  totalLabel = "connected spend",
+}: Omit<ViewProps, "points"> & { data: ChordData; valueText?: (value: number) => string; totalLabel?: string }) {
   const size = 520;
   const outer = size / 2 - 78;
   const inner = outer - 14;
@@ -403,7 +410,7 @@ export function ChordView({ data, focus, onFocus, visible }: Omit<ViewProps, "po
                         <b>
                           {data.names[c.source.index]} ↔ {data.names[c.target.index]}
                         </b>
-                        <span>{money(c.source.value)}</span>
+                        <span>{valueText(c.source.value)}</span>
                       </>
                     ),
                   });
@@ -434,16 +441,16 @@ export function ChordView({ data, focus, onFocus, visible }: Omit<ViewProps, "po
                 >
                   {name}
                 </text>
-                <title>{`${name}: ${money(g.value)} (${((g.value / total) * 100).toFixed(1)}%)`}</title>
+                <title>{`${name}: ${valueText(g.value)} (${((g.value / total) * 100).toFixed(1)}%)`}</title>
               </g>
             );
           })}
         </g>
         <text y={-4} textAnchor="middle" className="lab-chord__center">
-          {active != null ? money(chords.groups[active]?.value ?? 0) : money(total)}
+          {active != null ? valueText(chords.groups[active]?.value ?? 0) : valueText(total)}
         </text>
         <text y={14} textAnchor="middle" className="lab-chord__sub">
-          {active != null ? data.names[active] : "connected spend"}
+          {active != null ? data.names[active] : totalLabel}
         </text>
       </svg>
       {tip && <Tip x={tip.x} y={tip.y}>{tip.text}</Tip>}

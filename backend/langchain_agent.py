@@ -123,7 +123,34 @@ def get_schema_context():
         default=str,
     )
 
-    return schema, schema_text
+    return schema, dataset_overview(schema) + "\n\nFields per collection:\n" + schema_text
+
+
+def dataset_overview(schema):
+    """Plain-language list of the collections in scope: label, size, project.
+
+    Helps the planner see that several collections can hold the same kind of
+    record (e.g. one company sheet per industry) and must be combined to
+    answer a question about all of them.
+    """
+
+    from backend.db import db
+
+    labels = {d["name"]: d.get("label") for d in db["app_datasets"].find({}, {"name": 1, "label": 1})}
+    owners = {}
+    for project in db["app_projects"].find({}, {"name": 1, "datasets": 1}):
+        for name in project.get("datasets") or []:
+            owners[name] = project["name"]
+    lines = ["Datasets available for this question:"]
+    for name in sorted(schema):
+        try:
+            count = db[name].estimated_document_count()
+        except Exception:  # noqa: BLE001
+            count = "?"
+        label = labels.get(name) or name.replace("_", " ").title()
+        project = f", project '{owners[name]}'" if name in owners else ""
+        lines.append(f"- {name}: '{label}', {count} records{project}")
+    return "\n".join(lines)
 
 
 def decode_tool_result(result):
@@ -407,6 +434,8 @@ SUPPORTED AGGREGATION STAGES:
 - $facet
 - $addFields
 - $lookup
+- $count, $sortByCount, $bucket, $bucketAuto, $set, $unset
+- $unionWith (combine collections of the same kind; see rule 24)
 
 SUPPORTED GROUP ACCUMULATORS:
 
@@ -418,6 +447,7 @@ SUPPORTED GROUP ACCUMULATORS:
 - $last
 - $push
 - $addToSet
+- $stdDevPop, $stdDevSamp, $median, $percentile
 
 SUPPORTED EXPRESSION OPERATORS:
 
@@ -431,6 +461,9 @@ SUPPORTED EXPRESSION OPERATORS:
 - $toInt
 - $round
 - $abs
+- $size (e.g. count distinct values: $addToSet then {{"$size": "$values"}})
+- $floor, $ceil, $trunc, $mod, $toLower, $toUpper, $year, $month,
+  $dateToString, $switch, $filter, $map, $in, comparison operators
 
 QUERY RULES:
 
@@ -498,6 +531,30 @@ QUERY RULES:
     when necessary and explain any exclusions that affect the result.
 
 21. Return valid JSON only, without Markdown or explanations.
+
+22. Never use one field as a stand-in for a different measure (for
+    example, do not sum client counts when the user asks about spend or
+    revenue). If no field in the schema measures what was asked, return
+    exactly {{"unanswerable": "<the measure or field that is missing>"}}.
+    Counting records, listing them, or grouping them by an existing field
+    is ALWAYS answerable: never return "unanswerable" for those.
+
+24. Several collections can hold the same kind of record, split by
+    category (for example one company collection per industry, all with
+    company_name and country). When the question is about all of them
+    ("how many companies", "companies by country", "which companies are in
+    India"), use operation "aggregate" on one of them and add one
+    {{"$unionWith": "<other collection>"}} stage per other collection
+    before grouping or counting. To keep track of where each row came
+    from, add {{"$addFields": {{"dataset": "<label>"}}}} inside a
+    {{"$unionWith": {{"coll": "<name>", "pipeline": [...]}}}} and on the
+    first collection. Only combine collections listed above.
+
+23. Fields ending in "_num" are numeric versions of a text field with the
+    same name (e.g. "number_of_agents_est" = "10,000+" and
+    "number_of_agents_est_num" = 10000, the lower bound). Use the "_num"
+    field for sorting, totals and averages. Fields ending in "_flag" are
+    yes/no booleans of the same text field.
 """
 
     response = remove_markdown_fences(
@@ -519,6 +576,11 @@ QUERY RULES:
 
     if not isinstance(query_data, dict):
         return None
+
+    # Rule 22: the data has no field for what was asked. Passed through so
+    # the chat can say so instead of retrying or guessing.
+    if isinstance(query_data.get("unanswerable"), str) and query_data["unanswerable"].strip():
+        return {"unanswerable": query_data["unanswerable"].strip()[:200]}
 
     required_keys = {
         "collection",
@@ -776,6 +838,12 @@ Return the answer only.
             )
 
             continue
+
+        if isinstance(query_data, dict) and query_data.get("unanswerable"):
+            return (
+                f"The available data has no field for {query_data['unanswerable']}, "
+                "so I can't answer that without guessing."
+            )
 
         log_time(
             f"Query generation attempt {attempt + 1}",

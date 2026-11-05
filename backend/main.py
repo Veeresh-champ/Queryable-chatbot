@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -11,12 +12,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pymongo.errors import PyMongoError
 
-from backend import account, admin, agents, artifacts, auth, data_catalog, feedback, threads
+from backend import account, admin, agents, artifacts, auth, data_catalog, feedback, opportunities, projects, threads
 from backend.auth import require_user
 from backend.chat_service import ChatRun, model_options, with_heartbeat
 from backend.config import settings
-from backend.db import db, ping
-from backend import analytics, hr_analytics, insights
+from backend.db import db, ping, project_scope
+from backend import analytics, dashboard, hr_analytics, insights, project_lab
 from backend.langchain_agent import run_langchain_agent
 from backend.jev_router import route_question
 from backend.observability import logger, metrics_snapshot
@@ -50,6 +51,9 @@ app.include_router(artifacts.router)
 app.include_router(admin.router)
 app.include_router(agents.router)
 app.include_router(data_catalog.router)
+app.include_router(projects.router)
+app.include_router(projects.meta_router)
+app.include_router(opportunities.router)
 
 executor = ThreadPoolExecutor(max_workers=4)
 
@@ -66,6 +70,10 @@ def startup():
         feedback.ensure_indexes()
         artifacts.ensure_indexes()
         data_catalog.ensure_indexes()
+        projects.ensure_indexes()
+        created = projects.bootstrap_defaults()
+        if created:
+            logger.info("Created %s default project(s) for the sample data", created)
     except Exception as error:  # MongoDB down: the API still starts
         logger.warning("MongoDB index setup skipped: %s", error)
 
@@ -239,31 +247,64 @@ async def datasets(user=Depends(require_user)):
     return {"datasets": await asyncio.to_thread(hr_analytics.datasets)}
 
 
+async def _scoped(user, project, function, *args):
+    """Run a data helper limited to what this user may read (and the chosen project).
+
+    asyncio.to_thread copies the current context, so the scope set here is
+    the one every schema read inside ``function`` sees.
+    """
+
+    allowed = await asyncio.to_thread(projects.allowed_collections, user, project or None)
+    with project_scope(allowed):
+        return await asyncio.to_thread(_data_call, function, *args)
+
+
 @app.get("/api/insights/overview")
-async def insights_overview(dataset: str = "span", user=Depends(require_user)):
+async def insights_overview(dataset: str = "span", project: str | None = None, user=Depends(require_user)):
     """KPI tiles, chart panels, maps and headline insights for the dashboard."""
 
     overview, _ = _dataset(dataset)
-    return await asyncio.to_thread(_data_call, overview)
+    return await _scoped(user, project, overview)
 
 
 @app.get("/api/analytics/lab")
-async def analytics_lab(dataset: str = "span", user=Depends(require_user)):
+async def analytics_lab(dataset: str = "span", project: str | None = None, user=Depends(require_user)):
     """Relationship views, statistics and forecast for the Analytics lab page."""
 
     _, lab = _dataset(dataset)
-    return await asyncio.to_thread(_data_call, lab)
+    return await _scoped(user, project, lab)
+
+
+@app.get("/api/analytics/project-lab")
+async def analytics_project_lab(project: str | None = None, user=Depends(require_user)):
+    """Animated analytics for any project's company data (VAF samples and uploads)."""
+
+    return await _scoped(user, project, project_lab.lab)
+
+
+@app.get("/api/analytics/dataset-lab")
+async def analytics_dataset_lab(collection: str, project: str | None = None, user=Depends(require_user)):
+    """Animated deep dive into one dataset (any kind: companies, employees, orders)."""
+
+    return await _scoped(user, project, project_lab.dataset_lab, collection)
+
+
+@app.get("/api/dashboard")
+async def project_dashboard(project: str | None = None, collection: str | None = None, user=Depends(require_user)):
+    """Auto-built dashboard (KPIs + charts) for a project or one of its datasets."""
+
+    return await _scoped(user, project, dashboard.build, collection)
 
 
 @app.get("/api/geo/datasets")
-async def geo_datasets(user=Depends(require_user)):
-    return {"datasets": await asyncio.to_thread(_data_call, insights.geo_datasets)}
+async def geo_datasets(project: str | None = None, user=Depends(require_user)):
+    return {"datasets": await _scoped(user, project, insights.geo_datasets)}
 
 
 @app.get("/api/geo/explore")
 async def geo_explore(collection: str, place_field: str, value_field: str | None = None,
-                      op: str = "count", user=Depends(require_user)):
-    payload = await asyncio.to_thread(_data_call, insights.geo_explore, collection, place_field, value_field, op)
+                      op: str = "count", project: str | None = None, user=Depends(require_user)):
+    payload = await _scoped(user, project, insights.geo_explore, collection, place_field, value_field, op)
     return payload or {"places": [], "insights": [], "continents": []}
 
 
@@ -287,7 +328,15 @@ async def chat(request: Request, user=Depends(require_user)):
     if thread_id:
         await asyncio.to_thread(threads.get_owned, thread_id, user["username"])
 
-    run = ChatRun(user, thread_id, messages, body.get("model"))
+    # Project scope: only the user's authorised datasets in active projects,
+    # narrowed to the selected project when there is one. Checked before the
+    # stream starts so a disabled or forbidden project is a clear 4xx.
+    project = body.get("project") or None
+    if project is not None and not isinstance(project, str):
+        raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "project must be a string."})
+    scope = await asyncio.to_thread(projects.allowed_collections, user, project)
+
+    run = ChatRun(user, thread_id, messages, body.get("model"), project=project, scope=scope)
 
     return StreamingResponse(
         with_heartbeat(run.events()),
@@ -298,6 +347,7 @@ async def chat(request: Request, user=Depends(require_user)):
 
 class QuestionRequest(BaseModel):
     question: str
+    project: str | None = None
 
 
 def log_jev_result(question, jev_future, started_at):
@@ -324,6 +374,7 @@ async def ask_question(request: QuestionRequest, user=Depends(require_user)):
         raise HTTPException(status_code=429, detail={"code": "quota_exceeded", "message": limit.message})
 
     loop = asyncio.get_running_loop()
+    allowed = await asyncio.to_thread(projects.allowed_collections, user, request.project)
 
     # Start Jev in the background and log it when it finishes, without
     # delaying the answer.
@@ -332,7 +383,10 @@ async def ask_question(request: QuestionRequest, user=Depends(require_user)):
     jev_future.add_done_callback(lambda future: log_jev_result(question, future, jev_started))
 
     try:
-        answer = await loop.run_in_executor(executor, run_langchain_agent, question)
+        # run_in_executor does not carry context variables: run inside a copied context.
+        with project_scope(allowed):
+            context = contextvars.copy_context()
+        answer = await loop.run_in_executor(executor, context.run, run_langchain_agent, question)
     except Exception:
         logger.exception("/ask failed after %.2fs", time.perf_counter() - start_time)
         raise

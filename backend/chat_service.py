@@ -18,9 +18,10 @@ import json
 import time
 import uuid
 
-from backend import account, artifacts, langchain_agent
+from backend import account, artifacts, langchain_agent, opportunities, report_artifact
 from backend.analytics import answer_analysis
 from backend.config import settings
+from backend.db import reset_scope, set_scope
 from backend.geo import build_geo_payload
 from backend.guardrails import GuardrailViolation, check_question
 from backend.insights import result_insights
@@ -35,6 +36,7 @@ from backend.openui_engine import (
     fallback_message_ui,
     general_messages,
     grounding_issues,
+    opportunity_messages,
     repair_messages,
     stream_openui,
     wrap_prose,
@@ -136,8 +138,13 @@ def _contextual_question(question, history):
 
 
 class ChatRun:
-    def __init__(self, user, thread_id, messages, model=None):
+    def __init__(self, user, thread_id, messages, model=None, project=None, scope=None):
+        """``scope``: the collections this user may read for this chat (see
+        ``projects.allowed_collections``); ``project`` is the selected project id."""
+
         self.user = user
+        self.project = project
+        self.scope = scope
         self.thread_id = thread_id
         self.run_id = str(uuid.uuid4())
         self.messages = messages
@@ -226,6 +233,9 @@ class ChatRun:
 
     async def events(self):
         self.trace = start_trace(self.user["username"], self.question, self.thread_id)
+        # Every schema read, query validation and dashboard helper below
+        # (including work in asyncio.to_thread) sees only these collections.
+        scope_token = set_scope(self.scope) if self.scope is not None else None
         yield sse({"type": "RUN_STARTED", "threadId": self.thread_id, "runId": self.run_id})
 
         try:
@@ -254,6 +264,7 @@ class ChatRun:
                         self.user["username"],
                         list(self.messages) + self.generated,
                         self.answer_meta(),
+                        self.project,
                     )
                 except Exception:  # noqa: BLE001
                     logger.exception("could not save thread")
@@ -277,6 +288,8 @@ class ChatRun:
                 )
             except Exception:  # noqa: BLE001
                 logger.warning("could not record usage", exc_info=True)
+            if scope_token is not None:
+                reset_scope(scope_token)
 
         yield sse({"type": "RUN_FINISHED", "threadId": self.thread_id, "runId": self.run_id})
 
@@ -304,6 +317,23 @@ class ChatRun:
             return
 
         history = _history(self.messages)
+
+        # "What opportunities / use cases / who should we target?" is answered
+        # by the opportunity engine over the datasets in scope, with evidence.
+        if opportunities.is_opportunity_question(question):
+            try:
+                summary = await asyncio.to_thread(opportunities.chat_summary)
+            except Exception:  # noqa: BLE001 - fall back to the normal flow
+                logger.warning("opportunity engine failed", exc_info=True)
+                summary = None
+            if summary and summary["datasets"]:
+                self.trace.route = "opportunities"
+                for event in self.tool_events("route_question", {"question": question},
+                                              {"route": "opportunities", "source": "intent"}):
+                    yield event
+                async for event in self.opportunity_answer(question, history, summary):
+                    yield event
+                return
 
         route, route_info = await self.route(question)
         self.trace.route = route
@@ -368,7 +398,10 @@ class ChatRun:
         query, result, repair = None, None, None
         started = time.perf_counter()
 
-        cache_key = " ".join(query_question.lower().split())
+        # Queries are cached per data scope: the same words can mean a
+        # different collection inside another project.
+        scope_key = ",".join(sorted(self.scope)) if self.scope is not None else "*"
+        cache_key = f"{scope_key}|" + " ".join(query_question.lower().split())
         cached = _cached_query(cache_key)
         if cached is not None:
             try:
@@ -390,6 +423,8 @@ class ChatRun:
             if not query:
                 repair = "The model did not return a valid JSON query."
                 continue
+            if isinstance(query, dict) and query.get("unanswerable"):
+                break  # the data has no field for what was asked: say so, don't retry
             try:
                 result = await asyncio.to_thread(langchain_agent.execute_mongodb_query, query)
                 _remember_query(cache_key, query)
@@ -403,6 +438,22 @@ class ChatRun:
 
         latency = time.perf_counter() - started
         record_span("mongodb tool", latency, kind="tool", ok=result is not None)
+
+        if result is None and isinstance(query, dict) and query.get("unanswerable"):
+            missing = str(query["unanswerable"])[:200]
+            self.trace.status = "not_in_data"
+            for event in self.tool_events("query_mongodb", {"question": question},
+                                          {"ok": False, "error": f"Not in the data: {missing}"}):
+                yield event
+            yield self.text_start()
+            yield self.text(fallback_message_ui(
+                "This data doesn't contain that",
+                f"None of the datasets available here has a field for {missing}, so I won't estimate it. "
+                "Pick another project in the header, or ask about a field this data has.",
+                "info",
+            ))
+            yield self.text_end()
+            return
 
         if result is None or not isinstance(result, list):
             self.trace.status = "query_failed"
@@ -440,6 +491,8 @@ class ChatRun:
 
         for event in self.analysis_events(question, rows=result, query=query):
             yield event
+        for event in await self.next_actions_events(question, query):
+            yield event
 
         yield self.text_start()
 
@@ -451,6 +504,8 @@ class ChatRun:
                 fallback_data_ui(question, query, result, follow_ups=follow_ups)
             )
             yield self.text_end()
+            for event in await self.report_events(question, query, result):
+                yield event
             return
 
         async for event in self.stream_ui(
@@ -470,6 +525,46 @@ class ChatRun:
             )
             yield self.text("\n" + fallback_data_ui(question, query, result, note=note))
 
+        yield self.text_end()
+        for event in await self.report_events(question, query, result):
+            yield event
+
+    async def report_events(self, question, query, rows):
+        """The Claude-style report artifact for this answer (see backend/report_artifact.py)."""
+
+        try:
+            payload = await asyncio.to_thread(
+                report_artifact.build, self.user["username"], self.thread_id, question, query, rows,
+                list(self.tool_results), self.project,
+            )
+        except Exception:  # noqa: BLE001 - the answer itself is already delivered
+            logger.warning("report artifact failed", exc_info=True)
+            return []
+        if not payload:
+            return []
+        return self.tool_events("answer_artifact", {"question": question, "topic": payload["topic"]}, payload)
+
+    async def opportunity_answer(self, question, history, summary):
+        board = {
+            "scope": [d["label"] for d in summary["datasets"]],
+            "accounts": summary["accounts"],
+            "use_cases": summary["use_cases"],
+        }
+        for event in self.tool_events("next_best_actions", {"question": question, "mode": "overview"}, board):
+            yield event
+        yield self.text_start()
+        async for event in self.stream_ui(
+            opportunity_messages(question, summary, history), "openui opportunity answer",
+            data=summary, question=question,
+        ):
+            yield event
+        if self.ui_problem:
+            self.trace.fallback_used = True
+            rows = [{"use_case": c["title"], "status": c["status"].replace("_", " "),
+                     "accounts": c["accounts"], "of_accounts": c["considered"],
+                     "next_step": c["action"] if c["status"] == "ready" else c["missing"]}
+                    for c in summary["use_cases"]]
+            yield self.text("\n" + fallback_data_ui(question, {"operation": "opportunities"}, rows))
         yield self.text_end()
 
     async def general_answer(self, question, history, browser=False):
@@ -513,6 +608,34 @@ class ChatRun:
         if not self.ui_problem or self.ui_has_root:
             for event in self.analysis_events(question, answer_text=answer_text):
                 yield event
+
+    async def next_actions_events(self, question, query):
+        """Use cases the queried datasets support ("what should I do next?").
+
+        Optional enrichment: computed from the same datasets, with evidence,
+        and never allowed to break the answer.
+        """
+
+        names = set()
+        if isinstance(query, dict) and isinstance(query.get("collection"), str):
+            names.add(query["collection"])
+            for stage in query.get("pipeline") or []:
+                if isinstance(stage, dict) and isinstance(stage.get("$lookup"), dict):
+                    names.add(stage["$lookup"].get("from"))
+                if isinstance(stage, dict) and "$unionWith" in stage:
+                    union = stage["$unionWith"]
+                    names.add(union if isinstance(union, str) else (union or {}).get("coll"))
+        names.discard(None)
+        if not names:
+            return []
+        try:
+            actions = await asyncio.to_thread(opportunities.next_best_actions, sorted(names))
+        except Exception:  # noqa: BLE001
+            logger.warning("next best actions failed", exc_info=True)
+            return []
+        if not actions:
+            return []
+        return self.tool_events("next_best_actions", {"question": question, "mode": "after_query"}, actions)
 
     def analysis_events(self, question, rows=None, answer_text=None, query=None):
         """Geographic map and visual analysis, emitted as tool calls.

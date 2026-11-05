@@ -7,7 +7,7 @@ import { BarList, Donut, TrendChart, type Row } from "@/components/charts";
 import { GeoInsightList } from "@/components/geo-panel";
 import { WorldGlobe } from "@/components/world-globe";
 import { DatasetSwitch, useDataset } from "@/components/tools/datasets";
-import { AskButton, LoadState, ToolPage, useApi } from "@/components/tools/shared";
+import { AskButton, LoadState, SectionPage, useApi } from "@/components/tools/shared";
 import { formatValue, metricFormat, type GeoPayload, type InsightCard, type ValueFormat } from "@/lib/geo";
 
 type Kpi = { id: string; label: string; value: number; format: ValueFormat; hint: string };
@@ -26,7 +26,8 @@ function headlineIcon(card: InsightCard) {
   return <Sparkles size={16} />;
 }
 
-export function InsightsPage() {
+/** The original Insights overview, kept as the "Classic" view of Insights studio. */
+export function ClassicInsightsPage({ embedded = false }: { embedded?: boolean }) {
   const { datasets, dataset, setDataset } = useDataset();
   const { data, error, loading, reload } = useApi<Overview>(`/api/insights/overview?dataset=${dataset}`);
   const hr = dataset === "ibm_hr";
@@ -34,7 +35,8 @@ export function InsightsPage() {
   const activeMap = data?.maps.find((m) => m.id === mapId) ?? [...(data?.maps ?? [])].sort((a, b) => b.places.length - a.places.length)[0];
 
   return (
-    <ToolPage
+    <SectionPage
+      embedded={embedded}
       icon={<Lightbulb size={13} />}
       eyebrow="Insights studio"
       title={hr ? "Why employees leave" : "What your data is saying"}
@@ -143,6 +145,6 @@ export function InsightsPage() {
           </section>
         </>
       )}
-    </ToolPage>
+    </SectionPage>
   );
 }

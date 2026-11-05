@@ -41,6 +41,7 @@ TOOL_TYPES = {
     "geo_map": "qc_geo_map",
     "data_insights": "qc_data_insights",
     "query_mongodb": "qc_mongodb_query",
+    "answer_artifact": "qc_report",
 }
 TYPES = frozenset(TOOL_TYPES.values())
 
@@ -123,10 +124,41 @@ def build_artifacts(username, thread_id, question, calls):
     return docs
 
 
+def _save_report(doc):
+    """One library entry per report topic; each answer adds a version to it."""
+
+    content = doc["content"]
+    key = f"report:{doc['username']}:{content['artifact_id']}"
+    existing = artifacts.find_one({"_id": key}, {"content.versions": 1}) or {}
+    versions = ((existing.get("content") or {}).get("versions") or []) + [
+        {k: v for k, v in content.items() if k != "versions"}
+    ]
+    versions = versions[-12:]
+    while len(versions) > 1 and len(json.dumps(versions, default=str)) > MAX_CONTENT_BYTES:
+        versions = versions[1:]
+    artifacts.update_one(
+        {"_id": key},
+        {
+            "$set": {
+                "username": doc["username"], "threadId": doc["threadId"], "type": "qc_report", "tool": doc["tool"],
+                "title": f"{content.get('heading', 'Report')} · v{content.get('version', 1)}",
+                "question": doc["question"], "updatedAt": doc["updatedAt"],
+                "content": {**content, "versions": versions},
+            },
+            "$setOnInsert": {"createdAt": doc["createdAt"]},
+        },
+        upsert=True,
+    )
+
+
 def save_run_artifacts(username, thread_id, question, calls):
     docs = build_artifacts(username, thread_id, question, calls)
-    if docs:
-        artifacts.insert_many(docs)
+    reports = [d for d in docs if d["type"] == "qc_report"]
+    others = [d for d in docs if d["type"] != "qc_report"]
+    if others:
+        artifacts.insert_many(others)
+    for doc in reports:
+        _save_report(doc)
     return len(docs)
 
 

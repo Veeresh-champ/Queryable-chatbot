@@ -882,6 +882,70 @@ def _document_analysis(collection, rows):
             "charts": charts[:4], "insights": insights[:4]}
 
 
+_COUNT_KEY = re.compile(r"(count|total|number|^n$|companies|records|rows|customers|employees|accounts|orders)", re.IGNORECASE)
+
+
+def _match_filters(query):
+    """Simple field filters of a pipeline's leading $match (for context charts), else {}."""
+
+    pipeline = query.get("pipeline") or []
+    first = pipeline[0] if pipeline and isinstance(pipeline[0], dict) else {}
+    match = first.get("$match") if isinstance(first.get("$match"), dict) else {}
+    if any(str(key).startswith("$") for key in match):
+        return {}
+    return match
+
+
+def _is_union(query):
+    return any(isinstance(stage, dict) and "$unionWith" in stage for stage in query.get("pipeline") or [])
+
+
+def _single_row_analysis(collection, query, row):
+    """One-row aggregate answers (counts, totals, overviews): the answer's own
+    numbers as headline stats, plus what the matching records look like."""
+
+    numbers = {k: v for k, v in row.items() if k != "_id" and _numeric(v)}
+    if not numbers:
+        return None
+    own = [{"label": _words(k)[:1].upper() + _words(k)[1:], "value": v, "format": _format_of(k), "hint": "from the answer"}
+           for k, v in numbers.items()][:4]
+    if not collection or _is_union(query):
+        n = len([s for s in query.get("pipeline") or [] if isinstance(s, dict) and "$unionWith" in s]) + 1
+        return {"title": "Answer at a glance", "stats": own, "charts": [],
+                "insights": [{"kind": "concentration", "title": f"Combined across {n} datasets", "value": str(n),
+                              "detail": "every matching record from each dataset is included"}]}
+    filters = _match_filters(query)
+    count_keys = [k for k, v in numbers.items() if isinstance(v, int) and _COUNT_KEY.search(k)]
+    if count_keys:
+        matched = numbers[count_keys[0]]
+    else:
+        matched = db[collection].count_documents(filters, maxTimeMS=MAX_TIME_MS)
+    result = _count_analysis(collection, filters, matched)
+    context = [stat for stat in result["stats"] if stat["label"] != "Matching records"]
+    result["stats"] = (own + context)[:6]
+    result["title"] = "Answer at a glance"
+    if not result["insights"]:
+        key, value = next(iter(numbers.items()))
+        result["insights"].append({"kind": "average", "title": _words(key)[:1].upper() + _words(key)[1:],
+                                   "value": _short(value), "detail": f"from {matched:,} matching records"})
+    return result
+
+
+def _promote_label(rows):
+    """Grouped rows whose label was renamed ({"country": "India", "n": 4}) -> {"_id": "India", "n": 4}."""
+
+    if not rows or not all(isinstance(r, dict) for r in rows) or "_id" in rows[0] or len(rows) < 2:
+        return rows
+    text_keys = [k for k, v in rows[0].items() if isinstance(v, str)]
+    has_number = any(_numeric(v) for v in rows[0].values())
+    if len(text_keys) != 1 or not has_number:
+        return rows
+    key = text_keys[0]
+    if not all(isinstance(r.get(key), str) for r in rows):
+        return rows
+    return [{"_id": r[key], **{k: v for k, v in r.items() if k != key}} for r in rows]
+
+
 def answer_analysis(query, rows):
     """``visual_analysis`` tool result for any database answer, or None.
 
@@ -899,10 +963,14 @@ def answer_analysis(query, rows):
     filters = query.get("filters") if isinstance(query.get("filters"), dict) else {}
     operation = query.get("operation")
 
+    rows = _promote_label(rows) if operation == "aggregate" else rows
+
     if operation == "count":
         if not collection or not _numeric(rows[0].get("count")):
             return None
         result = _count_analysis(collection, filters, rows[0]["count"])
+    elif operation == "aggregate" and len(rows) == 1 and isinstance(rows[0], dict) and rows[0].get("_id") is None:
+        result = _single_row_analysis(collection, query, rows[0])
     elif operation == "distinct":
         field = query.get("field")
         if not collection or field not in schema[collection]:
@@ -914,5 +982,85 @@ def answer_analysis(query, rows):
         result = _document_analysis(collection, rows)
 
     if not result or not (result["charts"] or result["insights"]):
+        result = _fallback_analysis(collection, query, rows)
+    if not result or not (result["charts"] or result["insights"]):
         return None
     return {**result, "operation": operation, "collection": collection}
+
+
+def _fallback_analysis(collection, query, rows):
+    """Answers the main builders cannot chart still get a visual:
+
+    1. a "top 1" grouped answer -> the full ranking it was cut from;
+    2. a list whose numbers are written as text ("8K+", "$1.2B") -> ranked by those numbers;
+    3. any other list -> what the matching records look like (share + breakdowns).
+    """
+
+    pipeline = query.get("pipeline") or []
+    if (query.get("operation") == "aggregate" and collection and len(rows) == 1 and isinstance(rows[0], dict)
+            and rows[0].get("_id") is not None and any("$limit" in st for st in pipeline if isinstance(st, dict))):
+        full = [st for st in pipeline if not (isinstance(st, dict) and "$limit" in st)] + [{"$limit": 30}]
+        try:
+            ranked = _agg_rows(collection, full)
+        except Exception:  # noqa: BLE001 - the original answer stands
+            ranked = []
+        if len(ranked) > 1 and label_value_rows(ranked)[0]:
+            result = _grouped_analysis(ranked, query)
+            if result:
+                result["title"] = f"{result.get('title', 'Ranking')} (full ranking)"
+                return result
+
+    ranking = _text_number_ranking(rows)
+    if ranking:
+        return ranking
+
+    if collection and rows and not _is_union(query):
+        filters = query.get("filters") if isinstance(query.get("filters"), dict) else {}
+        filters = filters or _match_filters(query)
+        try:
+            matched = db[collection].count_documents(filters, maxTimeMS=MAX_TIME_MS)
+        except Exception:  # noqa: BLE001
+            return None
+        result = _count_analysis(collection, filters, matched)
+        result["title"] = f"What the {matched:,} matching records look like"
+        return result
+    return None
+
+
+def _text_number_ranking(rows):
+    """Rank a list by a column of human-written numbers ("15,000+", "4.3/5", "$1.2B")."""
+
+    from backend.data_catalog import parse_amount  # local: avoids a circular import at load time
+
+    docs = [r for r in rows if isinstance(r, dict)][:200]
+    if len(docs) < 2:
+        return None
+    keys = [k for k in docs[0] if k != "_id"]
+    label_key = next((k for k in keys if all(isinstance(d.get(k), str) for d in docs)
+                      and len({d.get(k) for d in docs}) >= 0.8 * len(docs)), None)
+    if not label_key:
+        return None
+    for key in keys:
+        if key == label_key:
+            continue
+        values = [d.get(key) for d in docs]
+        if not all(isinstance(v, str) for v in values if v is not None):
+            continue
+        parsed = [(d[label_key], parse_amount(d[key])[0], d[key]) for d in docs if isinstance(d.get(key), str)]
+        parsed = [(label, number, text) for label, number, text in parsed if number is not None]
+        if len(parsed) >= max(2, 0.6 * len(docs)):
+            parsed.sort(key=lambda t: -t[1])
+            top = parsed[:15]
+            name = _words(key)
+            insights = [{"kind": "leader", "title": f"{top[0][0]} is highest", "value": top[0][2],
+                         "detail": f"{name} (as written in the data)"}]
+            if len(parsed) >= 3:
+                insights.append({"kind": "spread", "title": "Highest vs lowest", "value": f"{top[0][2]} vs {parsed[-1][2]}",
+                                 "detail": f"{parsed[0][0]} vs {parsed[-1][0]}"})
+            return {"title": f"Ranked by {name}", "stats": [
+                        {"label": "Rows", "value": len(docs), "format": "number", "hint": "in the answer"},
+                        {"label": f"Highest {name}", "value": top[0][1], "format": "number", "hint": top[0][0]}],
+                    "charts": [{"kind": "bars", "title": f"{name[:1].upper()}{name[1:]} (lower bound as written)",
+                                "format": "number", "rows": [{"label": label, "value": number} for label, number, _ in top]}],
+                    "insights": insights}
+    return None

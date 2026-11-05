@@ -13,10 +13,12 @@ import {
   Mountain,
   Scale,
   Sigma,
+  Target,
   TrendingUp,
 } from "lucide-react";
 
 import { BarList, Sparkline, TrendChart } from "@/components/charts";
+import { CountrySpotlight, chipHue } from "@/components/country-spotlight";
 import { GeoInsightList, GeoPanel } from "@/components/geo-panel";
 import { VisualAnalysisView, type VisualAnalysis } from "@/components/lab/answer-charts";
 import { WorldGlobe } from "@/components/world-globe";
@@ -73,6 +75,7 @@ export const geoMapRenderer = defineArtifactRenderer<GeoProps>({
         </div>
       );
     }
+    if (data.places.length === 1) return <CountrySpotlight data={data} onOpen={controls.open} />;
     const format = metricFormat(data.metric);
     const top = [...data.places].sort((a, b) => (b.value ?? 0) - (a.value ?? 0)).slice(0, 4);
     return (
@@ -99,8 +102,8 @@ export const geoMapRenderer = defineArtifactRenderer<GeoProps>({
         </header>
         <WorldGlobe places={data.places} regions={data.regions} metric={data.metric} compact />
         <div className="qc-geo-card__chips">
-          {top.map((place) => (
-            <span key={place.key} className="qc-place-chip">
+          {top.map((place, i) => (
+            <span key={place.key} className="qc-place-chip qc-place-chip--color" style={{ ["--chip" as string]: chipHue(i) }}>
               <span className="qc-place-chip__dot" />
               {place.name}
               {typeof place.value === "number" && <b>{formatValue(place.value, format)}</b>}
@@ -232,4 +235,84 @@ export const visualAnalysisRenderer = defineArtifactRenderer<VisualProps>({
     ) : null,
   label: "Analysis",
   icon: <Lightbulb size={16} />,
+});
+
+// ---------------------------------------------------------------- next best actions
+
+type ActionEvidence = { label: string; value: string | number; why: string };
+type ActionAccount = { name: string; country: string | null; dataset_label: string; evidence: ActionEvidence[] };
+type ActionCase = {
+  id?: string;
+  title: string;
+  for: string;
+  action: string;
+  timing: string;
+  accounts: number;
+  considered: number;
+  status?: string;
+  missing?: string | null;
+  top?: ActionAccount[];
+  top_accounts?: { name: string; country: string | null; dataset: string; evidence: string[] }[];
+};
+type ActionsPayload = { scope: string[]; accounts: number; use_cases: ActionCase[] };
+
+function firstEvidence(c: ActionCase) {
+  if (c.top?.[0]) {
+    const e = c.top[0].evidence[0];
+    return e ? `${c.top[0].name}: ${e.label} ${String(e.value).slice(0, 60)} (${e.why})` : c.top[0].name;
+  }
+  const a = c.top_accounts?.[0];
+  return a ? `${a.name}: ${a.evidence[0] ?? ""}` : "";
+}
+
+function ActionsList({ data, full }: { data: ActionsPayload; full?: boolean }) {
+  const cases = full ? data.use_cases : data.use_cases.filter((c) => !c.status || c.status === "ready").slice(0, 3);
+  return (
+    <div className="qc-nba__list">
+      {cases.map((c) => {
+        const ready = !c.status || c.status === "ready";
+        return (
+          <div key={c.title} className="qc-nba__item">
+            <strong>{c.title}</strong>
+            <span>{ready ? `${c.accounts.toLocaleString()} of ${c.considered.toLocaleString()} accounts · for ${c.for}` : c.missing}</span>
+            {ready && (
+              <>
+                <p><b>Next:</b> {c.action}</p>
+                {full && <p><b>When:</b> {c.timing}</p>}
+                {firstEvidence(c) && <p className="qc-muted">e.g. {firstEvidence(c)}</p>}
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Use cases the queried data supports (backend/opportunities.py), shown
+ * inline under the answer only: ``meta: null`` keeps it out of the
+ * Artifacts library and the side panel.
+ */
+export const opportunitiesRenderer = defineArtifactRenderer<{ data: ActionsPayload | null }>({
+  type: "qc_opportunities",
+  toolName: "next_best_actions",
+  parser: ({ response }) => {
+    const data = parseJSON<ActionsPayload>(response);
+    if (data && !data.use_cases?.length) return null;
+    return { props: { data }, meta: null };
+  },
+  preview: ({ data }) =>
+    data ? (
+      <section className="qc-nba" aria-label="Suggested next steps">
+        <header>
+          <Target size={14} /> <strong>What you could do next</strong>
+          <span className="qc-muted"> · {data.accounts.toLocaleString()} accounts in {data.scope.length} dataset(s)</span>
+        </header>
+        <ActionsList data={data} />
+      </section>
+    ) : null,
+  actual: () => null,
+  label: "Next steps",
+  icon: <Target size={16} />,
 });

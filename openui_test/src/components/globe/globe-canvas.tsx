@@ -247,6 +247,15 @@ export default function GlobeCanvas({
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const introPlayed = useRef(false);
   const [ready, setReady] = useState(false);
+  // react-globe.gl can report "ready" while it is still rendering, before this
+  // component has mounted; setting state then makes React warn. Defer it.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const activeKey = highlightKey ?? hoverKey;
   const ramp = palette.ramp;
@@ -558,7 +567,11 @@ export default function GlobeCanvas({
       showAtmosphere
       atmosphereColor={palette.atmosphere}
       atmosphereAltitude={0.18}
-      onGlobeReady={() => setReady(true)}
+      onGlobeReady={() => {
+        requestAnimationFrame(() => {
+          if (mounted.current) setReady(true);
+        });
+      }}
       // hex dots: rainbow halftone land for the countries the answer doesn't mention
       hexPolygonsData={dotted}
       hexPolygonResolution={compact ? 2 : 3}

@@ -6,23 +6,36 @@ ALLOWED_OPERATIONS = {"find", "count", "distinct", "aggregate"}
 ALLOWED_FILTER_OPERATORS = {
     "$eq", "$ne", "$gt", "$gte", "$lt", "$lte",
     "$in", "$nin", "$regex", "$options", "$exists",
-    "$and", "$or", "$nor", "$not",
+    "$and", "$or", "$nor", "$not", "$expr", "$size", "$type",
 }
 
 ALLOWED_PIPELINE_STAGES = {
     "$match", "$group", "$sort", "$limit", "$skip",
     "$project", "$unwind", "$facet", "$addFields", "$lookup", "$count",
+    # Read-only reshaping and bucketing stages ($out, $merge, $function and
+    # $accumulator stay blocked: they write data or run code).
+    "$set", "$unset", "$sortByCount", "$bucket", "$bucketAuto", "$replaceRoot",
+    # Combine datasets of the same kind (e.g. one company sheet per industry).
+    # The target must be a readable collection in the current scope.
+    "$unionWith",
 }
 
 ALLOWED_GROUP_OPERATORS = {
     "$sum", "$avg", "$min", "$max", "$first",
-    "$last", "$push", "$addToSet",
+    "$last", "$push", "$addToSet", "$count",
+    "$stdDevPop", "$stdDevSamp", "$median", "$percentile",
 }
 
 ALLOWED_EXPRESSION_OPERATORS = {
     "$add", "$subtract", "$multiply", "$divide",
     "$ifNull", "$cond", "$toDouble", "$toInt",
     "$round", "$abs", "$concat", "$toString", "$arrayElemAt",
+    # Read-only expressions overview and statistics questions need.
+    "$size", "$mod", "$floor", "$ceil", "$trunc", "$sqrt", "$pow", "$log10", "$ln", "$exp",
+    "$toLower", "$toUpper", "$trim", "$split", "$substrCP", "$strLenCP", "$toLong", "$toDecimal", "$toBool",
+    "$year", "$month", "$dayOfMonth", "$dateToString", "$dateFromString", "$toDate",
+    "$switch", "$isArray", "$setUnion", "$concatArrays", "$slice", "$filter", "$map", "$in",
+    "$cmp", "$eq", "$ne", "$gt", "$gte", "$lt", "$lte", "$and", "$or", "$not", "$isNumber",
 }
 
 
@@ -236,6 +249,18 @@ def validate_pipeline(pipeline):
 
         elif stage_name == "$match":
             if not isinstance(stage_value, dict):
+                return False
+
+        elif stage_name == "$unionWith":
+            if isinstance(stage_value, str):
+                target, nested = stage_value, None
+            elif isinstance(stage_value, dict) and not set(stage_value) - {"coll", "pipeline"}:
+                target, nested = stage_value.get("coll"), stage_value.get("pipeline")
+            else:
+                return False
+            if not isinstance(target, str) or target not in schema:
+                return False
+            if nested is not None and nested != [] and not validate_pipeline(nested):
                 return False
 
         elif stage_name == "$group":

@@ -92,6 +92,42 @@ export function ToolPage({
   );
 }
 
+/** A ToolPage that can also render as a section inside another page (`embedded`). */
+export function SectionPage({
+  embedded = false,
+  icon,
+  eyebrow,
+  title,
+  description,
+  actions,
+  children,
+}: {
+  embedded?: boolean;
+  icon: React.ReactNode;
+  eyebrow: string;
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  if (!embedded) {
+    return <ToolPage icon={icon} eyebrow={eyebrow} title={title} description={description} actions={actions}>{children}</ToolPage>;
+  }
+  return (
+    <section className="qc-embedded-page" aria-label={title}>
+      <header className="qc-embedded-page__head">
+        <div>
+          <p className="qc-eyebrow">{icon} {eyebrow}</p>
+          <h2>{title}</h2>
+          {description && <p className="qc-tool-page__description">{description}</p>}
+        </div>
+        {actions && <div className="qc-tool-page__actions">{actions}</div>}
+      </header>
+      {children}
+    </section>
+  );
+}
+
 export function LoadState({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry?: () => void }) {
   if (error) {
     return (

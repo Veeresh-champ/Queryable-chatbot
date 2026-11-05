@@ -36,7 +36,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-from backend.admin import _audit, require_admin
+from backend.admin import _audit, require_member
 from backend.config import INTERNAL_COLLECTIONS
 from backend import projects as project_store
 from backend.db import business_collection_names, db, disabled_collections, invalidate_project_cache
@@ -612,7 +612,7 @@ def catalog():
 
 
 @router.get("")
-def get_catalog(admin=Depends(require_admin)):
+def get_catalog(admin=Depends(require_member)):
     """Collections and fields the chatbot can read (PII-masked samples). Admins only."""
 
     purge_expired()
@@ -644,7 +644,7 @@ async def _read(file: UploadFile):
 async def preview(
     file: UploadFile = File(...),
     sheet: str | None = Form(None),
-    admin=Depends(require_admin),
+    admin=Depends(require_member),
 ):
     """Parse the file and show what would be imported, without writing anything."""
 
@@ -698,7 +698,7 @@ async def upload(
     project: str | None = Form(None),
     tags: str = Form(""),
     temporary: bool = Form(False),
-    admin=Depends(require_admin),
+    admin=Depends(require_member),
 ):
     """Import one file (or sheet) as a queryable collection, optionally into a project.
 
@@ -814,7 +814,7 @@ def _uploaded(name):
 
 
 @router.patch("/{name}")
-def update_dataset(name: str, payload: DatasetPatch, admin=Depends(require_admin)):
+def update_dataset(name: str, payload: DatasetPatch, admin=Depends(require_member)):
     _uploaded(name)
     changes = {key: value.strip() for key, value in payload.model_dump(exclude_none=True).items()}
     if changes:
@@ -824,7 +824,7 @@ def update_dataset(name: str, payload: DatasetPatch, admin=Depends(require_admin
 
 
 @router.post("/{name}/keep")
-def keep_dataset(name: str, admin=Depends(require_admin)):
+def keep_dataset(name: str, admin=Depends(require_member)):
     """Turn a "use without saving" upload into a saved dataset."""
 
     _uploaded(name)
@@ -834,7 +834,7 @@ def keep_dataset(name: str, admin=Depends(require_admin)):
 
 
 @router.delete("/{name}")
-def delete_dataset(name: str, admin=Depends(require_admin)):
+def delete_dataset(name: str, admin=Depends(require_member)):
     doc = _uploaded(name)
     db[name].drop()
     datasets.delete_one({"name": name})

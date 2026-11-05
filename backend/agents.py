@@ -12,7 +12,7 @@ switched on.
 
 from fastapi import APIRouter, Depends
 
-from backend.admin import require_admin
+from backend.admin import require_member
 from backend.config import SEPARATE_DATASET_COLLECTIONS, settings
 from backend.data_catalog import uploaded_names
 from backend.db import business_collection_names, db
@@ -111,7 +111,7 @@ def agent_map():
 
 
 @router.get("/agents")
-def get_agents(admin=Depends(require_admin)):
+def get_agents(admin=Depends(require_member)):
     return agent_map()
 
 
@@ -149,5 +149,5 @@ def integrations():
 
 
 @router.get("/integrations")
-def get_integrations(admin=Depends(require_admin)):
+def get_integrations(admin=Depends(require_member)):
     return integrations()

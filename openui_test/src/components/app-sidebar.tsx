@@ -45,7 +45,7 @@ const TOOLS = [
   { path: TOOL_ROUTES.geo, label: "Geo explorer", icon: <Globe2 size={16} /> },
 ];
 
-/** Admin-only pages; users get these later (see the user view on the roadmap). */
+/** Workspace pages, open to every signed-in user. */
 const ADMIN_TOOLS = [
   { path: TOOL_ROUTES.admin, label: "Admin console", icon: <ShieldCheck size={16} /> },
   { path: TOOL_ROUTES.catalog, label: "Data catalog", icon: <Database size={16} /> },
@@ -165,7 +165,7 @@ export function renderSidebar({
         <AgentInterface.ArtifactNav className="qc-side-artifacts" />
       </SideSection>
 
-      {user?.role === "admin" && (
+      {user && (
         <SideSection id="admin" label="Admin">
           {ADMIN_TOOLS.map((tool) => (
             <AgentInterface.SidebarItem

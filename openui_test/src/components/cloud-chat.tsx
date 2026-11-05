@@ -20,7 +20,7 @@ import { OpportunitiesPage } from "@/components/tools/opportunities-page";
 import { QueryableAssistantMessage } from "@/components/assistant-message";
 import { renderSidebar, SettingsButton, TOOL_ROUTES } from "@/components/app-sidebar";
 import { artifactRenderers as queryRenderers } from "@/components/query-inspector";
-import { AdminOnly, ChatFileDrop } from "@/components/admin-only";
+import { ChatFileDrop } from "@/components/admin-only";
 import { AdminPage } from "@/components/tools/admin-page";
 import { AgentMapPage } from "@/components/tools/agent-map-page";
 import { IntegrationsPage } from "@/components/tools/integrations-page";
@@ -127,7 +127,6 @@ export default function CloudChat() {
   }, []);
 
   const chooseModel = (model: string) => setSavedModel(model);
-  const role = user ? user.role : null;
 
   const llm = useMemo(
     () =>
@@ -221,27 +220,19 @@ export default function CloudChat() {
             <GeoExplorerPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.catalog}>
-            <AdminOnly role={role}>
-              <CatalogPage />
-            </AdminOnly>
+            <CatalogPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.prompts}>
-            <AdminOnly role={role}>
-              <PromptsPage />
-            </AdminOnly>
+            <PromptsPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.agents}>
-            <AdminOnly role={role}>
-              <AgentMapPage />
-            </AdminOnly>
+            <AgentMapPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.integrations}>
-            <AdminOnly role={role}>
-              <IntegrationsPage />
-            </AdminOnly>
+            <IntegrationsPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.admin}>
-            <AdminPage isAdmin={user?.role === "admin"} />
+            <AdminPage isAdmin={!!user} canManageUsers={user?.role === "admin"} />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.settings}>
             <SettingsPage
@@ -274,7 +265,7 @@ export default function CloudChat() {
           />
 
           <VoiceDock />
-          <ChatFileDrop enabled={role === "admin"} />
+          <ChatFileDrop enabled={!!user} />
         </AgentInterface>
       </div>
     </div>

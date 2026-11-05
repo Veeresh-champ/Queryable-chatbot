@@ -37,11 +37,12 @@ def _file(name="Regional Sales.csv", content=CSV, kind="text/csv"):
     return {"file": (name, io.BytesIO(content), kind)}
 
 
-def test_analysts_cannot_see_or_change_the_catalog(logged_in):
-    assert logged_in.get("/api/catalog").status_code == 403
-    assert logged_in.post("/api/catalog/upload", files=_file()).status_code == 403
-    assert logged_in.get("/api/admin/agents").status_code == 403
-    assert logged_in.get("/api/admin/integrations").status_code == 403
+def test_analysts_can_open_the_workspace_pages(logged_in, app_client):
+    assert logged_in.get("/api/catalog").status_code == 200
+    assert logged_in.get("/api/admin/agents").status_code == 200
+    assert logged_in.get("/api/admin/integrations").status_code == 200
+    logged_in.post("/api/auth/logout")
+    assert app_client.get("/api/catalog").status_code == 401
 
 
 def test_preview_detects_columns_and_types(admin_client):

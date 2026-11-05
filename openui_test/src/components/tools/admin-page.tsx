@@ -343,7 +343,7 @@ function PasswordForm({ user, onDone }: { user: AdminUser; onDone: (message: str
   );
 }
 
-function UsersTab() {
+function UsersTab({ canManage }: { canManage: boolean }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "disabled" | "admins">("all");
   const [adding, setAdding] = useState(false);
@@ -407,12 +407,14 @@ function UsersTab() {
             </button>
           ))}
         </div>
-        <button type="button" className="qc-primary-button" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
-          <UserPlus size={14} /> Add user
-        </button>
+        {canManage && (
+          <button type="button" className="qc-primary-button" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
+            <UserPlus size={14} /> Add user
+          </button>
+        )}
       </div>
 
-      {adding && data && <AddUserForm plans={data.plans} onCreated={() => reload()} />}
+      {canManage && adding && data && <AddUserForm plans={data.plans} onCreated={() => reload()} />}
       <Notice {...state} />
 
       <section className="qc-set-card qc-set-card--flush">
@@ -456,8 +458,8 @@ function UsersTab() {
                           <select
                             className="qc-select qc-select--compact"
                             value={user.role}
-                            disabled={isMe}
-                            title={isMe ? "You can't change your own role" : undefined}
+                            disabled={isMe || !canManage}
+                            title={isMe ? "You can't change your own role" : !canManage ? "Only administrators can change roles" : undefined}
                             onChange={(e) => void patch(user, { role: e.target.value }, `@${user.username} is now ${e.target.value === "admin" ? "an administrator" : "an analyst"}.`)}
                             aria-label={`Role of ${user.username}`}
                           >
@@ -469,6 +471,7 @@ function UsersTab() {
                           <select
                             className="qc-select qc-select--compact"
                             value={user.plan}
+                            disabled={!canManage}
                             onChange={(e) => void patch(user, { plan: e.target.value }, `@${user.username} moved to the ${e.target.value} plan.`)}
                             aria-label={`Plan of ${user.username}`}
                           >
@@ -486,7 +489,7 @@ function UsersTab() {
                         <td className="is-num">{formatValue(user.artifacts)}</td>
                         <td>{relative(user.last_active)}</td>
                         <td>
-                          <span className="qc-admin-actions">
+                          {canManage && <span className="qc-admin-actions">
                             <button type="button" className="qc-icon-button" title="Set a new password" aria-label={`Set a new password for ${user.username}`} onClick={() => setResetFor(resetFor === user.username ? null : user.username)}>
                               <KeyRound size={15} />
                             </button>
@@ -503,10 +506,10 @@ function UsersTab() {
                             >
                               {user.disabled ? <CheckCircle2 size={15} /> : <Ban size={15} />}
                             </button>
-                          </span>
+                          </span>}
                         </td>
                       </tr>
-                      {resetFor === user.username && (
+                      {canManage && resetFor === user.username && (
                         <tr className="qc-admin-table__expand">
                           <td colSpan={9}>
                             <PasswordForm
@@ -700,15 +703,15 @@ function SystemTab({ data }: { data: Overview }) {
 
 /* ------------------------------------------------------------------- page */
 
-export function AdminPage({ isAdmin }: { isAdmin: boolean }) {
+export function AdminPage({ isAdmin, canManageUsers = false }: { isAdmin: boolean; canManageUsers?: boolean }) {
   const [tab, setTab] = useState<TabId>("overview");
   const overview = useApi<Overview>(isAdmin ? "/api/admin/overview" : null);
 
   if (!isAdmin) {
     return (
-      <ToolPage icon={<ShieldCheck size={13} />} eyebrow="Admin console" title="Administrators only">
+      <ToolPage icon={<ShieldCheck size={13} />} eyebrow="Admin console" title="Sign in required">
         <div className="qc-state qc-state--error" role="alert">
-          <ShieldCheck size={18} /> <span>You need an administrator account to open the admin console.</span>
+          <ShieldCheck size={18} /> <span>Sign in to open the admin console.</span>
         </div>
       </ToolPage>
     );
@@ -747,7 +750,7 @@ export function AdminPage({ isAdmin }: { isAdmin: boolean }) {
           )}
           {tab === "overview" && overview.data && <OverviewTab data={overview.data} />}
           {tab === "system" && overview.data && <SystemTab data={overview.data} />}
-          {tab === "users" && <UsersTab />}
+          {tab === "users" && <UsersTab canManage={canManageUsers} />}
           {tab === "feedback" && <FeedbackTab />}
           {tab === "activity" && <ActivityTab />}
         </div>

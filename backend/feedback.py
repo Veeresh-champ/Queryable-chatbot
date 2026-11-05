@@ -151,8 +151,6 @@ def thread_ratings(thread_id: str, user=Depends(require_user)):
 
 @router.get("/summary")
 def summary(user=Depends(require_user)):
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail={"code": "forbidden", "message": "Administrators only."})
 
     totals = {row["_id"]: row["count"] for row in feedback.aggregate(
         [{"$group": {"_id": "$rating", "count": {"$sum": 1}}}]

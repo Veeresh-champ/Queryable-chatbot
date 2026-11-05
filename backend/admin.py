@@ -57,6 +57,13 @@ def require_admin(user=Depends(require_session_user)):
     return user
 
 
+def require_member(user=Depends(require_session_user)):
+    """Any signed-in user. The workspace pages (overview, data catalog,
+    prompts, agent map, integrations, projects) are open to everyone;
+    only user-account changes stay behind ``require_admin``."""
+    return user
+
+
 def _iso(value):
     if not value:
         return None
@@ -105,7 +112,7 @@ def _counts_by_user(collection, match=None):
 # --------------------------------------------------
 
 @router.get("/overview")
-def overview(admin=Depends(require_admin)):
+def overview(admin=Depends(require_member)):
     days = _days()
     today = days[-1]
     week = set(days[-7:])
@@ -223,7 +230,7 @@ def _public_user(doc, usage_14d, last_day, conversations, artifact_counts, key_c
 
 
 @router.get("/users")
-def list_users(q: str | None = None, admin=Depends(require_admin)):
+def list_users(q: str | None = None, admin=Depends(require_member)):
     query = {}
     if q and q.strip():
         pattern = re.escape(q.strip()[:60])
@@ -378,7 +385,7 @@ def revoke_sessions(username: str, admin=Depends(require_admin)):
 # --------------------------------------------------
 
 @router.get("/audit")
-def audit(admin=Depends(require_admin)):
+def audit(admin=Depends(require_member)):
     return {
         "events": [
             {

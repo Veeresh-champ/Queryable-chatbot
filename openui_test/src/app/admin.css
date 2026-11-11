@@ -221,7 +221,7 @@
   height: 34px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--qc-series-2), var(--qc-series-1));
-  color: #fff;
+  color: var(--qc-on-accent);
   font-weight: 750;
   font-size: 14px;
 }

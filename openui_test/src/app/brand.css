@@ -1,0 +1,99 @@
+/* ==========================================================================
+   "Onyx & Champagne" signature layer.
+   Imported last (layout.tsx) so it sits on top of the per-area stylesheets.
+   Only uses the --qc-* tokens from globals.css, so light and dark both work.
+   ========================================================================== */
+
+/* Headlines: champagne → gold → rose-copper gradient ink. */
+.qc-app .openui-agent-welcome-screen__title,
+.qc-tool-page__head h1,
+.qc-kpi__value {
+  background: var(--qc-gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Eyebrows and section labels pick up the rose-copper counterpoint. */
+.qc-eyebrow,
+.qc-eyebrow svg {
+  color: var(--qc-accent-2);
+}
+
+/* Cards: a thin gold → copper hairline on top, and a soft gold glow on hover. */
+.qc-tile,
+.qc-kpi {
+  position: relative;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.qc-tile::after,
+.qc-kpi::after {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: var(--qc-gradient-edge);
+  opacity: 0.55;
+  content: "";
+  pointer-events: none;
+}
+
+.qc-tile:hover,
+.qc-kpi:hover {
+  border-color: color-mix(in srgb, var(--qc-accent) 40%, transparent);
+  box-shadow: var(--qc-edge), var(--qc-glow);
+}
+
+.qc-kpi:hover {
+  transform: translateY(-2px);
+}
+
+/* Primary buttons: brushed champagne-gold gradient with a glow. */
+.qc-primary-button {
+  background: linear-gradient(135deg, var(--qc-accent-hover), var(--qc-accent) 45%, var(--qc-accent-3, var(--qc-accent)));
+  color: var(--qc-on-accent);
+  box-shadow: 0 10px 28px -12px var(--qc-accent);
+  transition: filter 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.qc-primary-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px -12px var(--qc-accent);
+}
+
+/* Selected chips / pressed tags. */
+.qc-tag[aria-pressed="true"] {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--qc-accent-hover), var(--qc-accent) 45%, var(--qc-accent-3, var(--qc-accent)));
+  color: var(--qc-on-accent);
+}
+
+/* Sign-in showcase headline accent. */
+.auth-showcase__headline em {
+  background: linear-gradient(100deg, #f2d79b, #e6c47a 50%, #e8836b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scrollbars tinted to the palette. */
+.qc-app ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--qc-accent) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qc-tile,
+  .qc-kpi,
+  .qc-primary-button {
+    transition: none;
+  }
+  .qc-kpi:hover,
+  .qc-primary-button:hover:not(:disabled) {
+    transform: none;
+  }
+}

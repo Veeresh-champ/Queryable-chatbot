@@ -153,7 +153,7 @@ export function EfficiencyBars({ points, focus, onFocus, visible }: ViewProps) {
         const active = isFocus(focus, "industry", row.label);
         return (
           <li
-            key={row.label}
+            key={`${row.label}-${i}`}
             className={`lab-bars__row ${active ? "is-active" : ""} ${focus?.dim === "industry" && !active ? "is-dim" : ""}`}
             onClick={() => onFocus("industry", row.label)}
             title={`${row.companies} companies`}
@@ -227,7 +227,7 @@ export function SizeScatter({ points, fit, focus, onFocus, visible, segments }: 
           const on = matches(pt, focus);
           return (
             <circle
-              key={pt.name}
+              key={`${pt.name}-${i}`}
               cx={x(pt.employees)}
               cy={y(pt.spend)}
               r={hover === i ? 7 : focus && on ? 5 : 3.6}
@@ -354,7 +354,7 @@ export function SpendDivergence({ data, focus, visible }: { data: OutlierData; f
         const up = v >= 0;
         const on = !focus || (focus.dim === "industry" ? focus.name === row.industry : focus.dim === "country" ? focus.name === row.country : true);
         return (
-          <li key={row.name} className={`lab-diverge__row ${on ? "" : "is-dim"}`} title={`${row.industry} · ${row.country}: ${money(row.spend)} vs ${money(row.expected)} expected`}>
+          <li key={`${row.name}-${i}`} className={`lab-diverge__row ${on ? "" : "is-dim"}`} title={`${row.industry} · ${row.country}: ${money(row.spend)} vs ${money(row.expected)} expected`}>
             <span className="lab-diverge__name">
               {row.name}
               <small>
@@ -433,7 +433,7 @@ export function RevenueForecast({ data, visible }: { data: RevenueData; visible:
           </g>
         ))}
         {all.map((p, i) => (
-          <text key={p.label} x={x(i)} y={height - 10} textAnchor="middle" className={`lab-axis ${p.kind === "forecast" ? "is-forecast" : ""}`}>
+          <text key={`${p.label}-${i}`} x={x(i)} y={height - 10} textAnchor="middle" className={`lab-axis ${p.kind === "forecast" ? "is-forecast" : ""}`}>
             {p.label.slice(2)}
           </text>
         ))}
@@ -447,7 +447,7 @@ export function RevenueForecast({ data, visible }: { data: RevenueData; visible:
         <path d={actual} pathLength={1} className="lab-draw lab-revenue__line" />
         <path d={fcLine} className="lab-revenue__forecast lab-fade" />
         {all.map((p, i) => (
-          <circle key={p.label} cx={x(i)} cy={y(p.value)} r={index === i ? 6 : 3.5} className={`lab-revenue__dot ${p.kind === "forecast" ? "is-forecast" : ""}`} style={{ animationDelay: `${600 + i * 60}ms` }} />
+          <circle key={`${p.label}-${i}`} cx={x(i)} cy={y(p.value)} r={index === i ? 6 : 3.5} className={`lab-revenue__dot ${p.kind === "forecast" ? "is-forecast" : ""}`} style={{ animationDelay: `${600 + i * 60}ms` }} />
         ))}
         {point && index != null && <line x1={x(index)} x2={x(index)} y1={pad.top} y2={height - pad.bottom} className="lab-cross" />}
       </svg>

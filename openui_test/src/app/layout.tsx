@@ -8,6 +8,7 @@ import "./lab.css";
 import "./admin.css";
 import "./workspace.css";
 import "./viz.css";
+import "./brand.css";
 
 const sans = Manrope({
   subsets: ["latin"],
@@ -28,8 +29,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#070a16" },
-    { media: "(prefers-color-scheme: light)", color: "#f5f6fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0a08" },
+    { media: "(prefers-color-scheme: light)", color: "#faf7f0" },
   ],
   width: "device-width",
   initialScale: 1,

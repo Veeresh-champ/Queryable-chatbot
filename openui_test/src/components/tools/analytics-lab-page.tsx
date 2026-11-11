@@ -165,7 +165,7 @@ export function AnalyticsLabPage() {
   const { projects, projectId } = useUsableProject();
   const [stored, setStored] = useLocalStorage("qc-lab-project");
   const chosen = projects.find((p) => p.id === stored) ?? projects.find((p) => p.id === projectId) ?? projects[0] ?? null;
-  const switcher = (
+  const switcher = projects.length > 0 ? (
     <div className="plab-switch" role="tablist" aria-label="Project">
       {projects.map((p) => (
         <button key={p.id} type="button" role="tab" aria-selected={chosen?.id === p.id} title={p.description}
@@ -174,19 +174,19 @@ export function AnalyticsLabPage() {
         </button>
       ))}
     </div>
-  );
+  ) : null;
   return (
     <div className="qc-lab">
       <ToolPage
         icon={<Orbit size={13} />}
         eyebrow="Analytics lab"
         title={chosen ? chosen.name : "Analytics lab"}
-        description="Animated views of every project, computed live from MongoDB. Hover any slice, petal, star or dot for the numbers behind it; missing values are shown as unknown, never filled in."
+        description="New project views and the classic SPAN / IBM HR views, computed live from MongoDB. Hover any slice, petal, star or dot for the numbers behind it; missing values are shown as unknown, never filled in."
         actions={switcher}
       >
         {!chosen && <p className="qc-muted">No active project is available to you.</p>}
         {chosen && <ProjectLab key={chosen.id} projectId={chosen.id} name={chosen.name} />}
-        {/* The original SPAN / IBM HR lab, kept below the project views. */}
+        {/* The original SPAN / IBM HR views, always shown below the project views. */}
         <ClassicLabPage embedded />
       </ToolPage>
     </div>

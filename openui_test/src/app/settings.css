@@ -8,30 +8,30 @@
 
 .qc-app {
   /* Value ramp, low → high: indigo, azure, cyan, lime, amber, rose. */
-  --qc-globe-ramp-1: #4f46e5;
-  --qc-globe-ramp-2: #3b82f6;
-  --qc-globe-ramp-3: #06b6d4;
-  --qc-globe-ramp-4: #84cc16;
-  --qc-globe-ramp-5: #f59e0b;
-  --qc-globe-ramp-6: #f43f5e;
+  --qc-globe-ramp-1: #5a1a2e;
+  --qc-globe-ramp-2: #9b3b4a;
+  --qc-globe-ramp-3: #c9654f;
+  --qc-globe-ramp-4: #c9973f;
+  --qc-globe-ramp-5: #e6c47a;
+  --qc-globe-ramp-6: #fff1cf;
   --qc-globe-space:
-    radial-gradient(ellipse 55% 50% at 50% 48%, rgba(124, 92, 255, 0.22), transparent 70%),
-    radial-gradient(ellipse 45% 40% at 18% 20%, rgba(34, 211, 238, 0.12), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 85% 85%, rgba(244, 114, 182, 0.12), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 50% 48%, rgba(201, 151, 63, 0.22), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 18% 20%, rgba(232, 131, 107, 0.12), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 85% 85%, rgba(122, 31, 61, 0.2), transparent 70%),
     radial-gradient(ellipse 40% 35% at 80% 12%, rgba(251, 191, 36, 0.07), transparent 70%);
 }
 
 .qc-app[data-theme="light"] {
   /* Deeper sea so the coloured countries read against it in daylight. */
   --qc-globe-ocean: #b7c4ee;
-  --qc-globe-ramp-1: #6366f1;
+  --qc-globe-ramp-1: #7a1f3d;
   --qc-globe-ramp-2: #0ea5e9;
   --qc-globe-ramp-3: #14b8a6;
   --qc-globe-ramp-4: #65a30d;
   --qc-globe-ramp-5: #d97706;
   --qc-globe-ramp-6: #e11d48;
   --qc-globe-space:
-    radial-gradient(ellipse 55% 50% at 50% 48%, rgba(91, 75, 219, 0.12), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 50% 48%, rgba(154, 107, 18, 0.12), transparent 70%),
     radial-gradient(ellipse 45% 40% at 18% 20%, rgba(8, 145, 178, 0.08), transparent 70%),
     radial-gradient(ellipse 50% 45% at 85% 85%, rgba(219, 39, 119, 0.07), transparent 70%);
 }
@@ -62,10 +62,10 @@
 .qc-globe-label__body { border-color: color-mix(in srgb, var(--place, var(--qc-accent)) 45%, transparent); }
 .qc-globe-label i {
   background: var(--place, var(--qc-accent));
-  color: #0b0820;
+  color: #1a1206;
 }
 .qc-globe-label b { color: var(--place, var(--qc-accent)); }
-.qc-globe-tip__rank { color: #0b0820; }
+.qc-globe-tip__rank { color: #1a1206; }
 .qc-globe__legend-bar { box-shadow: 0 0 18px -4px color-mix(in srgb, var(--qc-globe-ramp-5) 60%, transparent); }
 
 /* ------------------------------------------------- chat: ChatGPT / Claude */
@@ -358,7 +358,7 @@
   font-size: 12.5px;
   line-height: 1.6;
 }
-.qc-app[data-theme="light"] .qc-code { background: #12152b; color: #eef1ff; }
+.qc-app[data-theme="light"] .qc-code { background: #14201b; color: #f2f5f1; }
 
 /* usage chart */
 .qc-usage-chart {

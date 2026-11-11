@@ -76,7 +76,7 @@ export function RateBars({ data, overall, visible, role, onRole }: { data: Recor
           const active = clickable && role === row.label;
           return (
             <li
-              key={row.label}
+              key={`${row.label}-${i}`}
               className={`lab-bars__row hr-rates__row ${active ? "is-active" : ""} ${clickable && role && !active ? "is-dim" : ""}`}
               onClick={clickable ? () => onRole(row.label) : undefined}
               style={clickable ? undefined : { cursor: "default" }}
@@ -200,7 +200,7 @@ export function TenureCurve({ data, overall, visible }: { data: HrLabData["tenur
         ))}
         {data.map((d, i) => (
           <rect
-            key={d.label}
+            key={`${d.label}-${i}`}
             x={cx(i) - band * 0.32}
             width={band * 0.64}
             y={height - pad.bottom - (d.employees / maxHeads) * (height - pad.top - pad.bottom) * 0.45}
@@ -212,7 +212,7 @@ export function TenureCurve({ data, overall, visible }: { data: HrLabData["tenur
         <line x1={pad.left} x2={width - pad.right} y1={y(overall)} y2={y(overall)} className="lab-cross" />
         <path d={path} pathLength={1} className="lab-draw hr-tenure__line" />
         {data.map((d, i) => (
-          <g key={d.label} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
+          <g key={`${d.label}-${i}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
             <rect x={cx(i) - band / 2} y={pad.top} width={band} height={height - pad.top - pad.bottom} className="hr-hist__hit" />
             <circle cx={cx(i)} cy={y(d.rate)} r={hover === i ? 6 : 4} className="lab-fade hr-tenure__dot" />
             <text x={cx(i)} y={height - 12} textAnchor="middle" className="lab-axis">

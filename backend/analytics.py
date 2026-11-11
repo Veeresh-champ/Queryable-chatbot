@@ -787,7 +787,54 @@ def _grouped_analysis(rows, query):
         if averaged:
             # Shares and concentration of averages are not meaningful.
             insights = [i for i in insights if i["kind"] not in {"concentration", "skew"}]
-    return {"title": label, "stats": stats[:4], "charts": charts, "insights": insights}
+    if not is_time and 2 <= len(rows) <= 6:
+        measures = [k for k in rows[0] if k != "_id" and all(_numeric(r.get(k)) for r in rows)]
+        if len(measures) >= 2:
+            names = [(_group_name(r.get("_id")), r) for r in rows]
+            h_charts, h_insights = _head_to_head(names, measures, _words(keys[0]) if len(keys) == 1 else "group")
+            charts = h_charts + [c for c in charts if c["kind"] != "bars"]
+            insights = h_insights + insights
+    return {"title": label, "stats": stats[:4], "charts": charts[:4], "insights": insights}
+
+
+def _head_to_head(entities, fields, noun="item"):
+    """Comparison visuals for 2-6 named items ("compare A and B").
+
+    ``entities`` is [(name, {field: number})]. Two items get an A-vs-B chart
+    across every shared measure; 2-6 items get one ranked bar chart per
+    measure. Every number is taken from the rows as they are.
+    """
+
+    entities = [(str(n), v) for n, v in entities if n not in (None, "")]
+    if not 2 <= len(entities) <= 6 or not fields:
+        return [], []
+    charts, insights = [], []
+    if len(entities) == 2:
+        (a, va), (b, vb) = entities
+        rows = [{"label": _pretty(f), "value": float(va[f]), "baseline": float(vb[f]), "format": _format_of(f)}
+                for f in fields[:6] if _numeric(va.get(f)) and _numeric(vb.get(f)) and float(vb[f]) > 0]
+        if rows:
+            charts.append({"kind": "compare", "title": f"{a} vs {b}", "baseline_label": b, "rows": rows})
+            top = max(rows, key=lambda r: abs(math.log(max(r["value"], 1e-9) / r["baseline"])))
+            ratio = top["value"] / top["baseline"]
+            gap = f"{ratio:.1f}× {b}" if ratio >= 1 else f"{1 - ratio:.0%} below {b}"
+            insights.append({"kind": "jump" if ratio >= 1 else "drop",
+                             "title": f"{a}: {top['label'].lower()} is {gap}",
+                             "value": f"{ratio:.1f}×" if ratio >= 1 else f"−{1 - ratio:.0%}",
+                             "detail": f"{_short(top['value'])} vs {_short(top['baseline'])}"})
+    for f in fields[:3]:
+        bars = sorted(({"label": n, "value": round(float(v[f]), 2)} for n, v in entities if _numeric(v.get(f))),
+                      key=lambda r: -r["value"])
+        if len(bars) >= 2:
+            charts.append({"kind": "bars", "title": f"{_pretty(f)} by {noun}", "format": _format_of(f), "rows": bars})
+    return charts, insights
+
+
+def _group_name(key):
+    if isinstance(key, dict):
+        return " · ".join(str(v) for v in key.values() if v is not None)
+    return key
+
 
 
 def _document_analysis(collection, rows):
@@ -805,6 +852,11 @@ def _document_analysis(collection, rows):
     charts, insights = [], []
 
     metric = numeric[0] if numeric else None
+    if name_key and 2 <= len(docs) <= 6 and numeric:
+        h_charts, h_insights = _head_to_head([(d.get(name_key), d) for d in docs], numeric,
+                                             re.sub(r"[ _]?name$", "", name_key).replace("_", " ") or "item")
+        charts += h_charts
+        insights += h_insights
     if len(docs) == 1:
         stats += [{"label": _pretty(f), "value": float(docs[0][f]), "format": _format_of(f), "hint": "this record"}
                   for f in numeric[:3]]
@@ -817,8 +869,9 @@ def _document_analysis(collection, rows):
                       "hint": f"median {_short(statistics.median(values))}"})
         if name_key and len(docs) >= 2:
             ranked = sorted(docs, key=lambda d: d[metric], reverse=True)
-            charts.append({"kind": "bars", "title": f"{_pretty(metric)} by {_words(name_key)}", "format": fmt,
-                           "rows": [{"label": str(d[name_key]), "value": float(d[metric])} for d in ranked[:12]]})
+            if len(docs) > 6:
+                charts.append({"kind": "bars", "title": f"{_pretty(metric)} by {_words(name_key)}", "format": fmt,
+                               "rows": [{"label": str(d[name_key]), "value": float(d[metric])} for d in ranked[:12]]})
             if sum(values):
                 insights.append({"kind": "leader", "title": f"{ranked[0][name_key]} is the largest",
                                  "value": f"{ranked[0][metric] / sum(values):.0%}",
@@ -985,7 +1038,21 @@ def answer_analysis(query, rows):
         result = _fallback_analysis(collection, query, rows)
     if not result or not (result["charts"] or result["insights"]):
         return None
-    return {**result, "operation": operation, "collection": collection}
+    return {**result, "stats": _unique_stats(result.get("stats") or []), "operation": operation, "collection": collection}
+
+
+def _unique_stats(stats):
+    """Drop repeated headline stats (an answer's own total and the collection
+    context can carry the same label); the first one, from the answer, wins."""
+
+    seen, unique = set(), []
+    for stat in stats:
+        key = str(stat.get("label", "")).strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(stat)
+    return unique
 
 
 def _fallback_analysis(collection, query, rows):

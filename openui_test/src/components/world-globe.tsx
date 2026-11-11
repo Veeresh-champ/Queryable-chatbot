@@ -38,21 +38,21 @@ function hasWebGL(): boolean {
 }
 
 /** Aurora value ramp, low → high (tools.css defines the themed --qc-globe-ramp-N tokens). */
-const RAMP_FALLBACK = ["#4f46e5", "#3b82f6", "#06b6d4", "#84cc16", "#f59e0b", "#f43f5e"];
+const RAMP_FALLBACK = ["#0f766e", "#3b82f6", "#06b6d4", "#84cc16", "#f59e0b", "#f43f5e"];
 
 function readPalette(el: HTMLElement): GlobePalette {
   const style = getComputedStyle(el);
   const theme = el.closest("[data-theme]")?.getAttribute("data-theme");
   const get = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    accent: get("--qc-accent", "#8b7bff"),
-    accent2: get("--qc-accent-2", "#22d3ee"),
-    ocean: get("--qc-globe-ocean", "#0a0f24"),
-    land: get("--qc-globe-land", "#222a4d"),
+    accent: get("--qc-accent", "#e6c47a"),
+    accent2: get("--qc-accent-2", "#e8836b"),
+    ocean: get("--qc-globe-ocean", "#120f0b"),
+    land: get("--qc-globe-land", "#2e2619"),
     dot: get("--qc-globe-dot", "rgba(150, 168, 220, 0.5)"),
     border: get("--qc-globe-border", "rgba(255,255,255,0.18)"),
-    ink: get("--qc-ink", "#eef1ff"),
-    atmosphere: get("--qc-globe-atmosphere", "#8b7bff"),
+    ink: get("--qc-ink", "#f7f1e6"),
+    atmosphere: get("--qc-globe-atmosphere", "#e6c47a"),
     ramp: RAMP_FALLBACK.map((fallback, i) => get(`--qc-globe-ramp-${i + 1}`, fallback)),
     dark: theme !== "light",
   };

@@ -4,40 +4,40 @@
    ========================================================================== */
 
 .qc-app {
-  --qc-map-ocean: rgba(139, 123, 255, 0.05);
-  --qc-map-land: #1f2645;
-  --qc-map-border: rgba(7, 10, 22, 0.85);
-  --qc-map-graticule: rgba(170, 180, 255, 0.05);
-  --qc-map-halo: #0a0d1c;
+  --qc-map-ocean: rgba(230, 196, 122, 0.05);
+  --qc-map-land: #2b241a;
+  --qc-map-border: rgba(10, 8, 5, 0.85);
+  --qc-map-graticule: rgba(230, 196, 122, 0.06);
+  --qc-map-halo: #0b0a08;
 }
 
 .qc-app {
-  --qc-globe-ocean: #0a0f24;
-  --qc-globe-land: #222a4d;
-  --qc-globe-dot: rgba(160, 170, 255, 0.42);
-  --qc-globe-border: rgba(170, 180, 255, 0.26);
-  --qc-globe-atmosphere: #8b7bff;
+  --qc-globe-ocean: #120f0b;
+  --qc-globe-land: #2e2619;
+  --qc-globe-dot: rgba(230, 196, 122, 0.45);
+  --qc-globe-border: rgba(230, 196, 122, 0.28);
+  --qc-globe-atmosphere: #e6c47a;
   --qc-globe-space:
-    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(52, 211, 153, 0.14), transparent 70%),
-    radial-gradient(ellipse 80% 60% at 85% 110%, rgba(20, 184, 166, 0.08), transparent 70%);
+    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(201, 151, 63, 0.18), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 85% 110%, rgba(122, 31, 61, 0.16), transparent 70%);
 }
 
 .qc-app[data-theme="light"] {
-  --qc-globe-ocean: #c9d3f2;
+  --qc-globe-ocean: #e9dfca;
   --qc-globe-land: #f6f7fc;
   --qc-globe-dot: rgba(60, 60, 130, 0.3);
   --qc-globe-border: rgba(60, 60, 130, 0.3);
-  --qc-globe-atmosphere: #5b4bdb;
+  --qc-globe-atmosphere: #9a6b12;
   --qc-globe-space:
-    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(4, 120, 87, 0.1), transparent 70%),
-    radial-gradient(ellipse 80% 60% at 85% 110%, rgba(15, 118, 110, 0.06), transparent 70%);
+    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(154, 107, 18, 0.1), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 85% 110%, rgba(159, 18, 57, 0.06), transparent 70%);
 }
 
 .qc-app[data-theme="light"] {
-  --qc-map-ocean: rgba(91, 75, 219, 0.045);
+  --qc-map-ocean: rgba(154, 107, 18, 0.05);
   --qc-map-land: #e2e5f3;
   --qc-map-border: #f7f8fc;
-  --qc-map-graticule: rgba(30, 35, 90, 0.06);
+  --qc-map-graticule: rgba(90, 64, 20, 0.06);
   --qc-map-halo: #ffffff;
 }
 

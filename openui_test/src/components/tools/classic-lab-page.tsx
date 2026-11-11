@@ -38,6 +38,7 @@ import {
 import { AdoptionNetwork, ChordView, FlowSankey } from "@/components/lab/connections";
 import { Briefing, DriverRings, IndustryRadar, RevenueStream, ScenarioPlanner, SegmentGalaxy, SpendBeeswarm, SpendSunburst } from "@/components/lab/modern";
 import { IncomeScatter, PayGap, RateBars, RateHeatmap, RiskProfiles, StayLeaveHistogram, TenureCurve, type HrLabData } from "@/components/lab/hr";
+import { CompanyUniverse, SpendMosaic, SpendWaterfall, ToolLandscape } from "@/components/lab/signature";
 import { EfficiencyBars, ParetoCurve, RevenueForecast, SizeScatter, SpendBubbles, SpendDivergence } from "@/components/lab/patterns";
 import { CountUp, DIM_LABEL, series, useReveal, type Dim, type Focus, type Kpi, type LabData, type LabInsight } from "@/components/lab/shared";
 import { Sparkline } from "@/components/charts";
@@ -154,7 +155,7 @@ function Findings({ insights, onJump }: { insights: LabInsight[]; onJump: (insig
       <div className="lab-insights">
         {insights.map((insight, i) => (
           <button
-            key={insight.title}
+            key={`${insight.title}-${i}`}
             type="button"
             className="lab-insight"
             style={{ animationDelay: `${i * 80}ms`, ["--ins" as string]: series(i) }}
@@ -170,6 +171,15 @@ function Findings({ insights, onJump }: { insights: LabInsight[]; onJump: (insig
       </div>
     </section>
   );
+}
+
+/**
+ * Standalone, the classic lab owns the page (.qc-lab sets the height and the
+ * aurora). Embedded, it already sits inside the Analytics lab's .qc-lab, so a
+ * second full-height wrapper is not added.
+ */
+function LabShell({ embedded, children }: { embedded: boolean; children: React.ReactNode }) {
+  return embedded ? <div id="lab-classic" className="qc-lab-classic">{children}</div> : <div className="qc-lab">{children}</div>;
 }
 
 /** The original SPAN / IBM HR lab, kept as the "Classic" view of the Analytics lab. */
@@ -202,7 +212,7 @@ function SpanLab({ switcher, embedded }: { switcher: React.ReactNode; embedded: 
   const view = { points, focus, onFocus };
 
   return (
-    <div className="qc-lab">
+    <LabShell embedded={embedded}>
       <SectionPage
         embedded={embedded}
         icon={<Orbit size={13} />}
@@ -247,6 +257,32 @@ function SpanLab({ switcher, embedded }: { switcher: React.ReactNode; embedded: 
             </div>
 
             <Findings insights={data.insights} onJump={jump} />
+
+            <h2 className="lab-section">
+              <Sparkles size={15} /> Signature views
+            </h2>
+            <div className="lab-grid">
+              <LabTile id="universe" flash={flash === "universe"} icon={<Orbit size={15} />} title="Company universe"
+                       caption="Every company as a glowing orb inside its industry, sized by HR tech spend. Click to follow an industry."
+                       ask="Which industries and companies account for the most HR tech spend?">
+                {(visible) => <CompanyUniverse visible={visible} {...view} />}
+              </LabTile>
+              <LabTile id="mosaic" flash={flash === "mosaic"} icon={<Grid3x3 size={15} />} title="Spend mosaic"
+                       caption="Column width is each industry's share of spend; the stack shows how it splits across deployment models."
+                       ask="How does HR tech spend split by deployment type within each industry?">
+                {(visible) => <SpendMosaic visible={visible} {...view} />}
+              </LabTile>
+              <LabTile id="waterfall" wide flash={flash === "waterfall"} icon={<BadgeDollarSign size={15} />} title="How spend adds up"
+                       caption="Each market's contribution, stacked step by step into the total."
+                       ask="Which countries contribute the most to total HR tech spend?">
+                {(visible) => <SpendWaterfall visible={visible} {...view} />}
+              </LabTile>
+              <LabTile id="landscape" wide flash={flash === "landscape"} icon={<Building2 size={15} />} title="Tool landscape"
+                       caption="Technology categories and the HR tools inside them, sized by spend. Click a tool to follow it everywhere."
+                       ask="Which HR tools lead each technology category by spend?">
+                {(visible) => <ToolLandscape visible={visible} {...view} />}
+              </LabTile>
+            </div>
 
             <h2 className="lab-section">
               <BrainCircuit size={15} /> Segments and drivers
@@ -457,7 +493,7 @@ function SpanLab({ switcher, embedded }: { switcher: React.ReactNode; embedded: 
           </>
         )}
       </SectionPage>
-    </div>
+    </LabShell>
   );
 }
 
@@ -481,7 +517,7 @@ function HrLab({ switcher, embedded }: { switcher: React.ReactNode; embedded: bo
   const roleLeft = inRole.filter((p) => p.left).length;
 
   return (
-    <div className="qc-lab">
+    <LabShell embedded={embedded}>
       <SectionPage
         embedded={embedded}
         icon={<Orbit size={13} />}
@@ -637,6 +673,6 @@ function HrLab({ switcher, embedded }: { switcher: React.ReactNode; embedded: bo
           </>
         )}
       </SectionPage>
-    </div>
+    </LabShell>
   );
 }

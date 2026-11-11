@@ -150,7 +150,7 @@ export function SegmentGalaxy({ segments, points, focus, onFocus, visible }: Vie
             );
           })}
           {segments.map((seg, i) => (
-            <g key={seg.name} className={`lab-galaxy__label ${isFocus(focus, "segment", seg.name) ? "is-active" : ""}`} transform={`translate(${centres[i].x},${centres[i].y + (centres[i].y < height / 2 ? -110 : 118)})`} onClick={() => onFocus("segment", seg.name)}>
+            <g key={`${seg.name}-${i}`} className={`lab-galaxy__label ${isFocus(focus, "segment", seg.name) ? "is-active" : ""}`} transform={`translate(${centres[i].x},${centres[i].y + (centres[i].y < height / 2 ? -110 : 118)})`} onClick={() => onFocus("segment", seg.name)}>
               <text textAnchor="middle" className="lab-galaxy__name" style={{ fill: series(i) }}>
                 {seg.name}
               </text>
@@ -172,7 +172,7 @@ export function SegmentGalaxy({ segments, points, focus, onFocus, visible }: Vie
       </div>
       <ol className="lab-segments">
         {segments.map((seg, i) => (
-          <li key={seg.name}>
+          <li key={`${seg.name}-${i}`}>
             <button type="button" className={`lab-segment ${isFocus(focus, "segment", seg.name) ? "is-active" : ""}`} style={{ ["--seg" as string]: series(i), animationDelay: `${i * 90}ms` }} onClick={() => onFocus("segment", seg.name)}>
               <span className="lab-segment__name">{seg.name}</span>
               <span className="lab-segment__share">
@@ -319,14 +319,14 @@ export function IndustryRadar({ points, focus, onFocus, visible }: ViewProps) {
         })}
         {profiles.map((p, i) =>
           chosen.includes(p.name) ? (
-            <path key={p.name} className="lab-radar__shape" style={{ d: `path("${shape(p.norm)}")`, fill: series(i), stroke: series(i) } as React.CSSProperties} />
+            <path key={`${p.name}-${i}`} className="lab-radar__shape" style={{ d: `path("${shape(p.norm)}")`, fill: series(i), stroke: series(i) } as React.CSSProperties} />
           ) : null,
         )}
       </svg>
       <div className="lab-radar__chips">
         {profiles.map((p, i) => (
           <button
-            key={p.name}
+            key={`${p.name}-${i}`}
             type="button"
             className={`lab-pill ${chosen.includes(p.name) ? "is-on" : ""}`}
             style={{ ["--pill" as string]: series(i) }}
@@ -627,7 +627,7 @@ export function RevenueStream({ data, visible }: { data: StreamData; visible: bo
           })}
         </g>
         {data.months.map((m, i) => (
-          <text key={m.label} x={x(i)} y={height - 8} textAnchor="middle" className="lab-axis">
+          <text key={`${m.label}-${i}`} x={x(i)} y={height - 8} textAnchor="middle" className="lab-axis">
             {String(m.label).slice(5)}
           </text>
         ))}

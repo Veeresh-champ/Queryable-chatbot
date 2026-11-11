@@ -44,7 +44,7 @@ export type AnswerChart =
       intercept: number;
       points: { label: string; x: number; y: number }[];
     }
-  | { kind: "compare"; title: string; rows: { label: string; value: number; baseline: number; format: AnyFormat }[] }
+  | { kind: "compare"; title: string; baseline_label?: string; rows: { label: string; value: number; baseline: number; format: AnyFormat }[] }
   | { kind: "pareto"; title: string; curve: { x: number; y: number }[]; share_for_80: number; top10_share: number; gini: number };
 
 export type AnswerInsight = { kind: string; title: string; value: string; detail: string };
@@ -81,7 +81,7 @@ function Bars({ rows, format, visible, limit = 8 }: { rows: Row[]; format: AnyFo
     <>
       <ol className={`lab-bars ${visible ? "is-in" : ""}`}>
         {shown.map((row, i) => (
-          <li key={row.label} className="lab-bars__row" title={`${row.label}: ${fmt(row.value, format, false)} (${((row.value / total) * 100).toFixed(1)}%)`}>
+          <li key={`${row.label}-${i}`} className="lab-bars__row" title={`${row.label}: ${fmt(row.value, format, false)} (${((row.value / total) * 100).toFixed(1)}%)`}>
             <span className="lab-bars__label">{row.label}</span>
             <span className="lab-bars__track">
               <span
@@ -125,7 +125,7 @@ function Donut({ rows, format, visible }: { rows: Row[]; format: AnyFormat; visi
           const dash = Math.max(0.5, len - (parts.length > 1 ? 2.5 : 0));
           return (
             <circle
-              key={part.label}
+              key={`${part.label}-${i}`}
               cx="70"
               cy="70"
               r={radius}
@@ -150,7 +150,7 @@ function Donut({ rows, format, visible }: { rows: Row[]; format: AnyFormat; visi
       </svg>
       <ul className="lab-donut__legend">
         {parts.map((part, i) => (
-          <li key={part.label} className={active === i ? "is-active" : ""} onPointerEnter={() => setActive(i)} onPointerLeave={() => setActive(null)}>
+          <li key={`${part.label}-${i}`} className={active === i ? "is-active" : ""} onPointerEnter={() => setActive(i)} onPointerLeave={() => setActive(null)}>
             <i style={{ background: part.label === "Other" || part.label === "Everything else" ? "var(--qc-ink-3)" : series(i) }} />
             <span>{part.label}</span>
             <b>{fmt(part.value, format)}</b>
@@ -217,7 +217,7 @@ function Trend({ chart, visible }: { chart: Extract<AnswerChart, { kind: "trend"
         ))}
         {all.map((p, i) =>
           i % every === 0 || i === n - 1 ? (
-            <text key={p.label} x={x(i)} y={height - 8} textAnchor="middle" className={`lab-axis ${p.forecast ? "is-forecast" : ""}`}>
+            <text key={`${p.label}-${i}`} x={x(i)} y={height - 8} textAnchor="middle" className={`lab-axis ${p.forecast ? "is-forecast" : ""}`}>
               {p.label}
             </text>
           ) : null,
@@ -229,7 +229,7 @@ function Trend({ chart, visible }: { chart: Extract<AnswerChart, { kind: "trend"
         <path d={curve(actual.map((p) => p.value))} pathLength={1} className="lab-draw lab-revenue__line" />
         {chart.forecast.length > 0 && <path d={curve(tail.map((p) => p.value), last)} className="lab-revenue__forecast lab-fade" />}
         {all.map((p, i) => (
-          <circle key={p.label} cx={x(i)} cy={y(p.value)} r={index === i ? 6 : 3.2} className={`lab-revenue__dot ${p.forecast ? "is-forecast" : ""}`} style={{ animationDelay: `${500 + i * 50}ms` }} />
+          <circle key={`${p.label}-${i}`} cx={x(i)} cy={y(p.value)} r={index === i ? 6 : 3.2} className={`lab-revenue__dot ${p.forecast ? "is-forecast" : ""}`} style={{ animationDelay: `${500 + i * 50}ms` }} />
         ))}
         {point && index != null && <line x1={x(index)} x2={x(index)} y1={pad.top} y2={height - pad.bottom} className="lab-cross" />}
       </svg>
@@ -399,24 +399,27 @@ function Scatter({ chart, visible }: { chart: Extract<AnswerChart, { kind: "scat
 }
 
 function Compare({ chart, visible }: { chart: Extract<AnswerChart, { kind: "compare" }>; visible: boolean }) {
+  // Default baseline is the collection average; head-to-head charts name the other item.
+  const base = chart.baseline_label ?? "avg";
+  const baseTitle = chart.baseline_label ?? "Average";
   return (
     <ol className={`lab-compare ${visible ? "is-in" : ""}`}>
       {chart.rows.map((row, i) => {
         const max = Math.max(row.value, row.baseline) || 1;
         const ratio = row.baseline ? row.value / row.baseline : 0;
         return (
-          <li key={row.label} className="lab-compare__row">
+          <li key={`${row.label}-${i}`} className="lab-compare__row">
             <span className="lab-compare__label">
               {row.label}
               <b className={ratio >= 1 ? "is-up" : "is-down"}>{ratio >= 1 ? `${ratio.toFixed(1)}×` : `−${((1 - ratio) * 100).toFixed(0)}%`}</b>
             </span>
             <span className="lab-compare__track">
               <span className="lab-compare__bar" style={{ width: `${(row.value / max) * 100}%`, animationDelay: `${i * 90}ms` }} />
-              <span className="lab-compare__base" style={{ left: `${(row.baseline / max) * 100}%` }} title={`Average ${fmt(row.baseline, row.format, false)}`} />
+              <span className="lab-compare__base" style={{ left: `${(row.baseline / max) * 100}%` }} title={`${baseTitle} ${fmt(row.baseline, row.format, false)}`} />
             </span>
             <span className="lab-compare__value">
               {fmt(row.value, row.format)}
-              <small>avg {fmt(row.baseline, row.format)}</small>
+              <small>{base} {fmt(row.baseline, row.format)}</small>
             </span>
           </li>
         );
@@ -505,7 +508,7 @@ function chartRows(chart: AnswerChart): (string | number)[][] {
     case "scatter":
       return [["label", chart.x_label, chart.y_label], ...chart.points.map((p) => [p.label, p.x, p.y])];
     case "compare":
-      return [["measure", "value", "average"], ...chart.rows.map((r) => [r.label, r.value, r.baseline])];
+      return [["measure", "value", chart.baseline_label ?? "average"], ...chart.rows.map((r) => [r.label, r.value, r.baseline])];
     case "pareto":
       return [["share_of_groups", "share_of_total"], ...chart.curve.map((c) => [c.x, c.y])];
   }
@@ -545,7 +548,7 @@ export function VisualAnalysisView({ data, compact = false, actions }: { data: V
       {data.stats.length > 0 && (
         <div className="lab-answer__stats">
           {data.stats.map((stat, i) => (
-            <div key={stat.label} className="lab-answer__stat" style={{ animationDelay: `${i * 70}ms`, ["--kpi" as string]: series(i) }}>
+            <div key={`${stat.label}-${i}`} className="lab-answer__stat" style={{ animationDelay: `${i * 70}ms`, ["--kpi" as string]: series(i) }}>
               <span className="lab-answer__stat-label">{stat.label}</span>
               <strong>
                 <CountUp value={stat.value} format={stat.format} start={visible} duration={1100} />

@@ -138,7 +138,7 @@ export function InsightCards({ data }: { data: InsightsPayload }) {
   return (
     <div className="qc-insight-grid">
       {data.insights.map((card, index) => (
-        <article key={card.title} className={`qc-insight qc-insight--${card.kind}`} style={{ animationDelay: `${index * 60}ms` }}>
+        <article key={`${card.title}-${index}`} className={`qc-insight qc-insight--${card.kind}`} style={{ animationDelay: `${index * 60}ms` }}>
           <span className="qc-insight__icon">{INSIGHT_ICONS[card.kind] ?? <Lightbulb size={15} />}</span>
           <span className="qc-insight__value">{card.value}</span>
           <span className="qc-insight__title">{card.title}</span>

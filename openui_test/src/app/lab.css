@@ -779,3 +779,54 @@
 @media (prefers-reduced-motion: reduce) {
   .hr-hist__bar, .hr-heat__cell, .hr-pay__row { animation: none !important; transform: none !important; opacity: 1; }
 }
+
+/* ---------- Signature views (components/lab/signature.tsx) ---------- */
+.sig-stage { position: relative; }
+.sig-insight { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0 0; padding: 10px 12px; border-radius: 12px;
+  font-size: 13px; line-height: 1.5; color: var(--qc-ink-2);
+  background: linear-gradient(120deg, color-mix(in oklab, var(--qc-accent) 12%, transparent), color-mix(in oklab, var(--qc-accent-2) 8%, transparent));
+  border: 1px solid color-mix(in oklab, var(--qc-accent) 26%, transparent); }
+.sig-insight svg { flex: none; margin-top: 3px; color: var(--qc-accent); }
+.sig-insight b { color: var(--qc-ink); }
+.sig-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.is-dim { opacity: 0.18; transition: opacity 260ms ease; }
+
+.sig-universe__group circle { stroke-width: 1.2; transition: opacity 260ms ease; cursor: pointer; }
+.sig-universe__group { opacity: 0; }
+.sig-universe.is-in .sig-universe__group { animation: sig-fade 700ms ease-out both; }
+.sig-universe__label { font-size: 12px; font-weight: 650; fill: var(--qc-ink-2); pointer-events: none; }
+.sig-universe__dot { cursor: pointer; transform-box: fill-box; transform-origin: center; transform: scale(0); }
+.sig-universe.is-in .sig-universe__dot { animation: sig-pop 620ms cubic-bezier(.2, 1.4, .4, 1) both; }
+.sig-universe__dot circle:first-child { filter: drop-shadow(0 0 6px color-mix(in oklab, currentColor 40%, transparent)); transition: transform 160ms ease; }
+.sig-universe__dot:hover circle:first-child { stroke: var(--qc-ink); stroke-width: 1.5; }
+
+.sig-mosaic__cell { cursor: pointer; transform-box: fill-box; transform-origin: bottom; transform: scaleY(0); transition: filter 160ms ease; }
+.sig-mosaic.is-in .sig-mosaic__cell { animation: sig-grow 700ms cubic-bezier(.2, .9, .3, 1) both; }
+.sig-mosaic__cell:hover { filter: brightness(1.15) saturate(1.1); }
+.sig-mosaic__pct { font-size: 11px; font-weight: 700; fill: var(--lab-ink-on); pointer-events: none; }
+.sig-mosaic__share { font-weight: 700; fill: var(--qc-ink-2); }
+
+.sig-waterfall__bar, .sig-waterfall__total { cursor: pointer; transform-box: fill-box; transform-origin: bottom; transform: scaleY(0); }
+.sig-waterfall.is-in .sig-waterfall__bar, .sig-waterfall.is-in .sig-waterfall__total { animation: sig-grow 640ms cubic-bezier(.2, .9, .3, 1) both; }
+.sig-waterfall__total { fill: var(--qc-accent); filter: drop-shadow(0 6px 18px var(--lab-glow)); }
+.sig-waterfall__link { stroke: var(--lab-line-strong); stroke-dasharray: 3 3; }
+.sig-waterfall__val { font-size: 11px; font-weight: 700; fill: var(--qc-ink-2); font-variant-numeric: tabular-nums; }
+.sig-waterfall__bar:hover { filter: brightness(1.15); }
+
+.sig-tree__cat { fill: transparent; stroke-width: 1.2; }
+.sig-tree__catlabel { font-size: 11px; font-weight: 700; letter-spacing: .02em; fill: var(--qc-ink-2); text-transform: uppercase; }
+.sig-tree__leaf { cursor: pointer; opacity: 0; }
+.sig-tree.is-in .sig-tree__leaf { animation: sig-fade 520ms ease-out both; }
+.sig-tree__leaf rect { transition: filter 160ms ease; }
+.sig-tree__leaf:hover rect { filter: brightness(1.18); }
+.sig-tree__label { font-size: 12px; font-weight: 700; fill: var(--lab-ink-on); pointer-events: none; }
+.sig-tree__value { font-size: 11px; fill: var(--lab-ink-on); opacity: .8; pointer-events: none; font-variant-numeric: tabular-nums; }
+.sig-tree__leaf.is-dim, .sig-universe__dot.is-dim, .sig-universe__group.is-dim { opacity: 0.18; }
+
+@keyframes sig-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sig-pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes sig-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .sig-universe__dot, .sig-mosaic__cell, .sig-waterfall__bar, .sig-waterfall__total { transform: none !important; animation: none !important; }
+  .sig-universe__group, .sig-tree__leaf { opacity: 1 !important; animation: none !important; }
+}

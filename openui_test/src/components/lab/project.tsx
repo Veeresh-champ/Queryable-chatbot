@@ -173,7 +173,7 @@ export function AccountGalaxy({ accounts, datasets, visible }: { accounts: LabAc
                   onPointerEnter={() => setHover(n)} />
         ))}
         {datasets.map((d, i) => (
-          <text key={d.name} x={nodes.centers[i].x} y={nodes.centers[i].y - 62} textAnchor="middle"
+          <text key={`${d.name}-${i}`} x={nodes.centers[i].x} y={nodes.centers[i].y - 62} textAnchor="middle"
                 className={`plab-cluster-label ${visible ? "is-on" : ""}`} style={{ animationDelay: `${600 + i * 80}ms` }}>
             {short(d.label.replace(" (VAF)", ""), 22)} · {d.accounts}
           </text>
@@ -235,7 +235,7 @@ export function RadialRanking({ top, datasets, visible }: { top: TopAccount[]; d
       </svg>
       <ul className="plab-legend">
         {datasets.map((d, i) => (
-          <li key={d.name}><span style={{ background: series(i) }} />{d.label.replace(" (VAF)", "")}</li>
+          <li key={`${d.name}-${i}`}><span style={{ background: series(i) }} />{d.label.replace(" (VAF)", "")}</li>
         ))}
       </ul>
     </div>
@@ -282,7 +282,7 @@ export function HealthRings({ datasets, visible }: { datasets: LabDataset[]; vis
         {datasets.map((d, i) => {
           const r = 130 - i * 17;
           return (
-            <g key={d.name}>
+            <g key={`${d.name}-${i}`}>
               <circle r={r} className="plab-ring__track" />
               <circle r={r} pathLength={1} className="plab-ring__arc" stroke={series(i)} transform="rotate(-90)"
                       style={{ strokeDasharray: `${visible ? d.completeness : 0} 1`, transitionDelay: `${i * 120}ms` }}>
@@ -294,7 +294,7 @@ export function HealthRings({ datasets, visible }: { datasets: LabDataset[]; vis
       </svg>
       <ul className="plab-legend plab-legend--list">
         {datasets.map((d, i) => (
-          <li key={d.name}>
+          <li key={`${d.name}-${i}`}>
             <span style={{ background: series(i) }} />
             {d.label.replace(" (VAF)", "")}
             <b>{pct(d.completeness)}</b>

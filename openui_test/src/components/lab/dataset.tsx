@@ -92,7 +92,7 @@ export function OutcomeRose({ data, visible }: { data: OutcomeData; visible: boo
           const above = r.rate >= data.overall;
           const mid = (i + 0.5) * step - Math.PI / 2;
           return (
-            <g key={r.label} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
+            <g key={`${r.label}-${i}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
               <path d={petal({ i, rate: r.rate }) ?? ""} fill={above ? "var(--viz-series-2)" : "var(--viz-series-1)"}
                     className={`dlab-petal ${visible ? "is-on" : ""} ${hover != null && hover !== i ? "is-dim" : ""}`}
                     style={{ animationDelay: `${i * 90}ms` }}>
@@ -176,7 +176,7 @@ export function Ridgelines({ data, visible, format = "number" }: { data: RidgeDa
           const bins = g.density.length;
           const shape = area<number>().x((_, k) => x(k / (bins - 1))).y0(base).y1((v) => base - v * rowH * 1.35).curve(curveBasis);
           return (
-            <g key={g.label} className={`dlab-ridge ${visible ? "is-on" : ""}`} style={{ animationDelay: `${i * 120}ms` }}>
+            <g key={`${g.label}-${i}`} className={`dlab-ridge ${visible ? "is-on" : ""}`} style={{ animationDelay: `${i * 120}ms` }}>
               <title>{`${g.label}: median ${formatValue(g.median, format)} (${g.n} records)`}</title>
               <path d={shape(g.density) ?? ""} fill={series(i)} fillOpacity={0.55} stroke={series(i)} strokeWidth={1.5} />
               <line x1={x(g.position)} x2={x(g.position)} y1={base} y2={base - rowH * 0.9} className="dlab-ridge__median" />

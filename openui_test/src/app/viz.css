@@ -615,3 +615,8 @@ button.qc-usecase[aria-pressed="true"] { border-color: var(--qc-accent); box-sha
   .qc-spotlight__glow { animation: none; }
   .qc-spotlight__ring-arc { transition: none; }
 }
+
+/* Analytics lab: classic SPAN / IBM HR views shown with (or instead of) the project views. */
+
+.qc-lab-classic { display: grid; scroll-margin-top: 16px; }
+.qc-lab .qc-tool-page__actions { flex-wrap: wrap; gap: 8px; }

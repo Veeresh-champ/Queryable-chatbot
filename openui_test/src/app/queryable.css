@@ -616,14 +616,14 @@
     border-radius: 28px;
     /* Always a deep, lit stage, so it reads the same over either theme. */
     background:
-      radial-gradient(70% 55% at 90% 0%, rgba(124, 92, 255, 0.38), transparent 70%),
-      radial-gradient(60% 50% at 0% 100%, rgba(34, 211, 238, 0.22), transparent 70%),
-      radial-gradient(45% 40% at 60% 60%, rgba(244, 114, 182, 0.14), transparent 70%),
+      radial-gradient(70% 55% at 90% 0%, rgba(31, 184, 138, 0.38), transparent 70%),
+      radial-gradient(60% 50% at 0% 100%, rgba(245, 184, 74, 0.22), transparent 70%),
+      radial-gradient(45% 40% at 60% 60%, rgba(255, 122, 89, 0.14), transparent 70%),
       rgba(9, 11, 26, 0.9);
     backdrop-filter: blur(26px) saturate(150%);
     -webkit-backdrop-filter: blur(26px) saturate(150%);
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    color: #eef1ff;
+    color: #f7f1e6;
     padding: 48px;
   }
 }
@@ -635,7 +635,7 @@
 }
 
 .auth-showcase__eyebrow {
-  color: #b4bad6;
+  color: #c9bfae;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -651,7 +651,7 @@
 }
 
 .auth-showcase__headline em {
-  color: #b9afff;
+  color: #f5c451;
   font-style: italic;
 }
 
@@ -684,7 +684,7 @@
   font-weight: 650;
 }
 
-.auth-demo__unit { color: #7d84a6; font-size: 12px; font-weight: 500; }
+.auth-demo__unit { color: #8f8574; font-size: 12px; font-weight: 500; }
 
 .auth-demo__bars {
   display: flex;
@@ -702,7 +702,7 @@
   font-size: 12.5px;
 }
 
-.auth-demo__label { color: #b4bad6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auth-demo__label { color: #c9bfae; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .auth-demo__track {
   height: 12px;
@@ -733,7 +733,7 @@
 }
 
 .auth-demo__foot code {
-  color: #b4bad6;
+  color: #c9bfae;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 

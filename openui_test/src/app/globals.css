@@ -61,8 +61,8 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: #07080d;
-  color: #f1f2f8;
+  background: #0b0a08;
+  color: #f7f1e6;
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -82,54 +82,60 @@ body {
 }
 
 .qc-app {
-  --qc-bg: #070a16;
-  --qc-panel: rgba(17, 22, 44, 0.72);
-  --qc-panel-solid: #11162b;
-  --qc-panel-raised: rgba(28, 35, 66, 0.82);
-  --qc-glass-blur: blur(22px) saturate(140%);
-  --qc-ink: #eef1ff;
-  --qc-ink-2: #b4bad6;
-  --qc-ink-3: #7d84a6;
-  --qc-line: rgba(160, 170, 255, 0.08);
-  --qc-line-strong: rgba(160, 170, 255, 0.15);
-  --qc-accent: #8b7bff;
-  --qc-accent-hover: #a99dff;
-  --qc-accent-2: #22d3ee;
-  --qc-on-accent: #0b0820;
-  --qc-accent-soft: rgba(139, 123, 255, 0.16);
-  --qc-focus: #a99dff;
-  --qc-danger: #fb7185;
+  /* "Onyx & Champagne": warm onyx base, champagne-gold accent, rose-copper
+     counterpoint, a deep burgundy aurora. The luxury-house palette. */
+  --qc-bg: #0b0a08;
+  --qc-panel: rgba(24, 21, 17, 0.74);
+  --qc-panel-solid: #17140f;
+  --qc-panel-raised: rgba(38, 33, 26, 0.86);
+  --qc-glass-blur: blur(22px) saturate(160%);
+  --qc-ink: #f7f1e6;
+  --qc-ink-2: #c9bfae;
+  --qc-ink-3: #8f8574;
+  --qc-line: rgba(230, 196, 122, 0.1);
+  --qc-line-strong: rgba(230, 196, 122, 0.2);
+  --qc-accent: #e6c47a;
+  --qc-accent-hover: #f2d79b;
+  --qc-accent-2: #e8836b;
+  --qc-accent-3: #c9973f;
+  --qc-on-accent: #1a1206;
+  --qc-accent-soft: rgba(230, 196, 122, 0.15);
+  --qc-focus: #f2d79b;
+  --qc-danger: #ff6b8b;
   --qc-success: #34d399;
-  --qc-field: rgba(5, 7, 18, 0.6);
-  --qc-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), 0 18px 48px rgba(0, 0, 0, 0.45);
-  --qc-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --qc-field: rgba(8, 7, 5, 0.6);
+  --qc-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), 0 18px 48px rgba(0, 0, 0, 0.55);
+  --qc-edge: inset 0 1px 0 rgba(255, 236, 200, 0.07);
+  --qc-glow: 0 0 0 1px rgba(230, 196, 122, 0.4), 0 12px 40px -10px rgba(230, 196, 122, 0.45);
+  --qc-gradient-text: linear-gradient(100deg, #fff6e0 0%, #e6c47a 45%, #c9973f 70%, #e8836b 100%);
+  --qc-gradient-edge: linear-gradient(90deg, transparent, #e6c47a 25%, #e8836b 75%, transparent);
   /* Aurora */
-  --qc-aurora-a: rgba(124, 92, 255, 0.36);
-  --qc-aurora-b: rgba(34, 211, 238, 0.22);
-  --qc-aurora-c: rgba(244, 114, 182, 0.18);
-  --qc-grid-line: rgba(170, 180, 255, 0.035);
-  --qc-vignette: rgba(0, 0, 0, 0.55);
+  --qc-aurora-a: rgba(201, 151, 63, 0.3);
+  --qc-aurora-b: rgba(122, 31, 61, 0.42);
+  --qc-aurora-c: rgba(232, 131, 107, 0.2);
+  --qc-grid-line: rgba(230, 196, 122, 0.035);
+  --qc-vignette: rgba(0, 0, 0, 0.62);
   /* Chart series, same order as theme.ts */
-  --qc-series-1: #8b7bff;
-  --qc-series-2: #22d3ee;
-  --qc-series-3: #fbbf24;
-  --qc-series-4: #f472b6;
-  --qc-series-5: #34d399;
-  --qc-series-6: #60a5fa;
-  --qc-series-7: #fb923c;
-  --qc-series-8: #c084fc;
+  --qc-series-1: #e6c47a;
+  --qc-series-2: #e8836b;
+  --qc-series-3: #7fc8b6;
+  --qc-series-4: #c56b8a;
+  --qc-series-5: #8fb3e0;
+  --qc-series-6: #b9a36c;
+  --qc-series-7: #d9a5c9;
+  --qc-series-8: #9cc178;
 
   /* One-hue intensity ramp for analytical charts (components/lab/shared.tsx shade()) */
-  --lab-lo: #2b2d6e;
-  --lab-mid: #c13dc9;
-  --lab-hi: #ffc35a;
-  --lab-glow: rgba(139, 123, 255, 0.42);
-  --lab-ink-on: #160a2a;
-  --lab-surface: rgba(15, 20, 42, 0.66);
-  --lab-surface-2: rgba(24, 30, 60, 0.7);
-  --lab-line: rgba(170, 160, 255, 0.1);
-  --lab-line-strong: rgba(170, 160, 255, 0.22);
-  --lab-down: #fb7185;
+  --lab-lo: #3a1422;
+  --lab-mid: #b8564f;
+  --lab-hi: #f2d79b;
+  --lab-glow: rgba(230, 196, 122, 0.38);
+  --lab-ink-on: #1a1206;
+  --lab-surface: rgba(24, 21, 17, 0.68);
+  --lab-surface-2: rgba(38, 33, 26, 0.72);
+  --lab-line: rgba(230, 196, 122, 0.1);
+  --lab-line-strong: rgba(230, 196, 122, 0.22);
+  --lab-down: #e8836b;
 
   --page-ink: var(--qc-ink);
   --brand-surface: var(--qc-panel);
@@ -152,50 +158,54 @@ body {
 }
 
 .qc-app[data-theme="light"] {
-  --qc-bg: #f5f6fb;
+  --qc-bg: #faf7f0;
   --qc-panel: rgba(255, 255, 255, 0.74);
   --qc-panel-solid: #ffffff;
   --qc-panel-raised: rgba(255, 255, 255, 0.92);
-  --qc-ink: #12152b;
-  --qc-ink-2: #4a5072;
-  --qc-ink-3: #7a809c;
-  --qc-line: rgba(30, 35, 90, 0.08);
-  --qc-line-strong: rgba(30, 35, 90, 0.14);
-  --qc-accent: #5b4bdb;
-  --qc-accent-hover: #4a3ac4;
-  --qc-accent-2: #0891b2;
+  --qc-ink: #1c1710;
+  --qc-ink-2: #5a4f40;
+  --qc-ink-3: #8a7f6d;
+  --qc-line: rgba(90, 64, 20, 0.09);
+  --qc-line-strong: rgba(90, 64, 20, 0.16);
+  --qc-accent: #9a6b12;
+  --qc-accent-hover: #7d560c;
+  --qc-accent-2: #9f1239;
+  --qc-accent-3: #b8862b;
   --qc-on-accent: #ffffff;
-  --qc-accent-soft: rgba(91, 75, 219, 0.1);
-  --qc-focus: #5b4bdb;
+  --qc-accent-soft: rgba(154, 107, 18, 0.1);
+  --qc-focus: #9a6b12;
   --qc-danger: #be123c;
   --qc-success: #059669;
   --qc-field: rgba(255, 255, 255, 0.85);
-  --qc-shadow: 0 1px 2px rgba(30, 35, 90, 0.06), 0 18px 44px rgba(60, 50, 140, 0.1);
+  --qc-shadow: 0 1px 2px rgba(60, 40, 10, 0.06), 0 18px 44px rgba(90, 60, 20, 0.12);
   --qc-edge: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  --qc-aurora-a: rgba(124, 92, 255, 0.2);
-  --qc-aurora-b: rgba(34, 211, 238, 0.16);
-  --qc-aurora-c: rgba(244, 114, 182, 0.12);
-  --qc-grid-line: rgba(30, 35, 90, 0.04);
-  --qc-vignette: rgba(60, 60, 140, 0.1);
-  --lab-lo: #dfe2ff;
-  --lab-mid: #8b5cf6;
-  --lab-hi: #be185d;
-  --lab-glow: rgba(91, 75, 219, 0.22);
+  --qc-glow: 0 0 0 1px rgba(154, 107, 18, 0.3), 0 12px 32px -12px rgba(154, 107, 18, 0.4);
+  --qc-gradient-text: linear-gradient(100deg, #1c1710 0%, #7d560c 45%, #9a6b12 65%, #9f1239 100%);
+  --qc-gradient-edge: linear-gradient(90deg, transparent, #b8862b 25%, #9f1239 75%, transparent);
+  --qc-aurora-a: rgba(201, 151, 63, 0.22);
+  --qc-aurora-b: rgba(159, 18, 57, 0.1);
+  --qc-aurora-c: rgba(232, 131, 107, 0.14);
+  --qc-grid-line: rgba(90, 64, 20, 0.04);
+  --qc-vignette: rgba(90, 60, 20, 0.08);
+  --lab-lo: #f3e6cc;
+  --lab-mid: #b8862b;
+  --lab-hi: #9f1239;
+  --lab-glow: rgba(154, 107, 18, 0.2);
   --lab-ink-on: #ffffff;
   --lab-surface: rgba(255, 255, 255, 0.8);
-  --lab-surface-2: rgba(243, 244, 255, 0.92);
-  --lab-line: rgba(60, 50, 160, 0.1);
-  --lab-line-strong: rgba(60, 50, 160, 0.2);
+  --lab-surface-2: rgba(248, 243, 232, 0.92);
+  --lab-line: rgba(90, 64, 20, 0.1);
+  --lab-line-strong: rgba(90, 64, 20, 0.2);
   --lab-down: #f9a8b8;
-  --scroll-thumb: rgba(28, 30, 40, 0.16);
-  --qc-series-1: #5b4bdb;
-  --qc-series-2: #0891b2;
-  --qc-series-3: #d97706;
-  --qc-series-4: #db2777;
-  --qc-series-5: #059669;
-  --qc-series-6: #2563eb;
-  --qc-series-7: #ea580c;
-  --qc-series-8: #9333ea;
+  --scroll-thumb: rgba(60, 40, 10, 0.18);
+  --qc-series-1: #9a6b12;
+  --qc-series-2: #c2410c;
+  --qc-series-3: #0f766e;
+  --qc-series-4: #9f1239;
+  --qc-series-5: #2f5f9e;
+  --qc-series-6: #7a6a3a;
+  --qc-series-7: #a2457f;
+  --qc-series-8: #4d7c0f;
 }
 
 .qc-app :focus-visible {

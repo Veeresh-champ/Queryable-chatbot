@@ -88,6 +88,20 @@ PII_FIELD_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+# Yes/no columns about a PII-sounding topic ("credit_card_accepted",
+# "mobile_app_yes_no") hold no personal data.
+NOT_PII_SUFFIX = re.compile(r"(_yes_no|_accepted|_flag|_enabled|_available|_provided|_verified)$", re.IGNORECASE)
+
+
+def is_pii_field(name):
+    """True when a field name (any part of a dotted path) looks like personal data."""
+
+    for part in str(name or "").split("."):
+        if PII_FIELD_PATTERN.search(part) and not NOT_PII_SUFFIX.search(part):
+            return True
+    return False
+
+
 EMAIL_VALUE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_VALUE = re.compile(r"(?<!\d)(\+?\d[\d\s().-]{8,}\d)(?!\d)")
 
@@ -109,7 +123,7 @@ def _redact_value(key, value):
     if isinstance(value, list):
         return [_redact_value(key, item) for item in value]
 
-    if key and PII_FIELD_PATTERN.search(str(key)) and value not in (None, ""):
+    if key and is_pii_field(key) and value not in (None, ""):
         return _mask(value)
 
     if isinstance(value, str):

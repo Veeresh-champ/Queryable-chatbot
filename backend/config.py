@@ -38,10 +38,20 @@ def _list(name, default=""):
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _default_cookie_secure():
+    frontend = os.getenv("FRONTEND_URL", "http://localhost:3000").lower()
+    return not frontend.startswith(("http://localhost", "http://127.0.0.1"))
+
+
 @dataclass(frozen=True)
 class Settings:
     # MongoDB
     mongodb_uri: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    # Optional second connection for everything the chatbot reads (query
+    # tool, schema discovery). Point it at a MongoDB user with only the
+    # built-in ``read`` role so "read-only" is enforced by the database too,
+    # not just by the query validator. Empty = reuse MONGODB_URI.
+    mongodb_readonly_uri: str = os.getenv("MONGODB_READONLY_URI", "")
     mongodb_db: str = os.getenv("MONGODB_DB", "queryable_chatbot")
     # Collections the chatbot may query. Empty means "every business
     # collection", which still excludes the internal app_* collections.
@@ -89,17 +99,26 @@ class Settings:
     session_cookie_name: str = os.getenv("SESSION_COOKIE_NAME", "qc_session")
     session_ttl_minutes: int = _int("SESSION_TTL_MINUTES", 480)
     session_idle_minutes: int = _int("SESSION_IDLE_MINUTES", 60)
-    cookie_secure: bool = _bool("COOKIE_SECURE", False)
+    # Secure cookies unless the app runs on plain-HTTP localhost.
+    cookie_secure: bool = _bool("COOKIE_SECURE", _default_cookie_secure())
     login_max_attempts: int = _int("LOGIN_MAX_ATTEMPTS", 5)
     login_lockout_seconds: int = _int("LOGIN_LOCKOUT_SECONDS", 300)
-    # Self-service sign-up from the login page. Turn off for deployments
-    # where accounts are issued with scripts/create_user.py only.
+    # Failed logins for one username from ANY address before it is locked
+    # (stops password guessing that rotates IP addresses).
+    login_max_attempts_per_account: int = _int("LOGIN_MAX_ATTEMPTS_PER_ACCOUNT", 20)
+    # Self-service sign-up from the login page. Off by default: accounts are
+    # issued by an administrator (Admin console or scripts/create_user.py).
     allow_signup: bool = _bool("ALLOW_SIGNUP", False)
     signup_max_per_hour: int = _int("SIGNUP_MAX_PER_HOUR", 5)
+    # Chat and /ask requests per user per minute (protects LLM spend).
+    chat_requests_per_minute: int = _int("CHAT_REQUESTS_PER_MINUTE", 20)
 
     # Plans and API keys (Settings page). Billing is simulated: no payment
     # processor is connected, so switching plan only changes the limits.
     plan_limits_enforced: bool = _bool("PLAN_LIMITS_ENFORCED", True)
+    # Billing is simulated, so users may not pick their own plan unless this
+    # is switched on (demo only). Admins assign plans in the Admin console.
+    self_service_plans: bool = _bool("SELF_SERVICE_PLANS", False)
     default_plan: str = os.getenv("DEFAULT_PLAN", "free").lower()
 
     # Guardrails

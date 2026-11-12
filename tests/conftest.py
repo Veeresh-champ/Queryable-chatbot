@@ -18,6 +18,10 @@ os.environ["MONGODB_DB"] = "queryable_chatbot_test"
 os.environ["QUERYABLE_LOG_DIR"] = str(ROOT / "logs" / "test")
 os.environ.setdefault("LOGIN_MAX_ATTEMPTS", "3")
 os.environ.setdefault("LOGIN_LOCKOUT_SECONDS", "60")
+# Sign-up is off by default; the sign-up tests exercise it switched on.
+os.environ.setdefault("ALLOW_SIGNUP", "true")
+# Tests make many requests in a few seconds.
+os.environ.setdefault("CHAT_REQUESTS_PER_MINUTE", "0")
 
 import pytest  # noqa: E402
 

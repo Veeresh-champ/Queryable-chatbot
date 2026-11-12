@@ -39,6 +39,7 @@ type Overview = {
   plan: string;
   plans: Plan[];
   billing_simulated: boolean;
+  self_service_plans?: boolean;
   limits_enforced: boolean;
   usage: {
     today: number;
@@ -317,7 +318,12 @@ function BillingTab({ data, onChanged }: { data: Overview; onChanged: (plan: str
     <>
       <section className="qc-set-card">
         <UsageMeter used={data.usage.today} limit={data.limits_enforced ? data.usage.limit : null} />
-        {data.billing_simulated && (
+        {!data.self_service_plans && (
+          <p className="qc-set-note">
+            <Sparkles size={13} /> Plans are assigned by an administrator. Ask an admin if you need a higher limit.
+          </p>
+        )}
+        {data.self_service_plans && data.billing_simulated && (
           <p className="qc-set-note">
             <Sparkles size={13} /> Demo billing: no payment processor is connected, so plan changes apply instantly
             and nothing is charged.
@@ -350,7 +356,7 @@ function BillingTab({ data, onChanged }: { data: Overview; onChanged: (plan: str
               <button
                 type="button"
                 className={current ? "qc-ghost-button" : upgrade ? "qc-primary-button" : "qc-ghost-button"}
-                disabled={current || busy !== ""}
+                disabled={current || busy !== "" || !data.self_service_plans}
                 onClick={() => choose(plan)}
               >
                 {current ? "Your plan" : busy === plan.id ? "Switching…" : upgrade ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`}

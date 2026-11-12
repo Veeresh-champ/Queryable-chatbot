@@ -1,6 +1,6 @@
 
 from backend.config import settings
-from backend.db import db
+from backend.db import read_db as db
 from backend.guardrails import redact_pii
 
 # Every query is read-only, time-limited and size-limited. The query

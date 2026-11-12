@@ -17,6 +17,7 @@ from backend.auth import require_user
 from backend.chat_service import ChatRun, model_options, with_heartbeat
 from backend.config import settings
 from backend.db import db, ping, project_scope
+from backend.guardrails import GuardrailViolation, check_question
 from backend import analytics, dashboard, hr_analytics, insights, project_lab
 from backend.langchain_agent import run_langchain_agent
 from backend.jev_router import route_question
@@ -177,11 +178,8 @@ def readyz():
     except Exception:  # noqa: BLE001
         mongodb_ok = False
     ready = mongodb_ok and bool(settings.openrouter_api_key)
-    return JSONResponse(
-        {"status": "ready" if ready else "not_ready", "mongodb": mongodb_ok,
-         "openrouter_configured": bool(settings.openrouter_api_key)},
-        status_code=200 if ready else 503,
-    )
+    # Public probe: no configuration details (admins see them in the Admin console).
+    return JSONResponse({"status": "ready" if ready else "not_ready"}, status_code=200 if ready else 503)
 
 
 @app.get("/api/health")
@@ -191,9 +189,17 @@ def health():
     except Exception:  # noqa: BLE001
         mongodb = "unavailable"
 
+    # Public: the login page only needs to know whether MongoDB answers.
+    # Providers, integrations and validator state are not disclosed here.
+    return {"status": "ok", "mongodb": mongodb}
+
+
+@app.get("/api/health/details")
+def health_details(user=Depends(require_user)):
+    """Configuration overview for signed-in users (not public)."""
+
     return {
-        "status": "ok",
-        "mongodb": mongodb,
+        **health(),
         "openrouter_configured": bool(settings.openrouter_api_key),
         "openui_provider": settings.openui_provider,
         "thesys_configured": bool(settings.thesys_api_key),
@@ -203,6 +209,58 @@ def health():
         "graphiti_enabled": settings.graphiti_enabled,
         "langfuse_enabled": bool(settings.langfuse_public_key and settings.langfuse_secret_key),
     }
+
+
+# --------------------------------------------------
+# Per-user request rate limit for the LLM endpoints
+# --------------------------------------------------
+
+_recent_requests = {}
+_recent_lock = threading.Lock()
+
+
+def check_rate_limit(user):
+    """At most CHAT_REQUESTS_PER_MINUTE chat/ask requests per user per minute."""
+
+    limit = settings.chat_requests_per_minute
+    if limit <= 0:
+        return
+    now = time.monotonic()
+    with _recent_lock:
+        recent = [stamp for stamp in _recent_requests.get(user["username"], []) if now - stamp < 60]
+        if len(recent) >= limit:
+            _recent_requests[user["username"]] = recent
+            retry = max(1, int(60 - (now - recent[0])))
+            raise HTTPException(
+                status_code=429,
+                detail={"code": "rate_limited",
+                        "message": f"Too many questions in a short time. Try again in {retry} seconds."},
+                headers={"Retry-After": str(retry)},
+            )
+        recent.append(now)
+        _recent_requests[user["username"]] = recent
+
+
+def trusted_messages(client_messages, stored_thread):
+    """Conversation history the server can vouch for.
+
+    The browser resends the whole conversation on every turn. Earlier turns
+    are taken from the stored thread (matched by message id) so a client
+    cannot forge "assistant" or earlier "user" turns to steer the model;
+    only the new, final user message comes from the request.
+    """
+
+    known = {
+        message["id"]: message
+        for message in ((stored_thread or {}).get("messages") or [])
+        if isinstance(message, dict) and message.get("id")
+    }
+    history = [
+        known[message["id"]]
+        for message in client_messages[:-1]
+        if isinstance(message, dict) and message.get("id") in known
+    ]
+    return history + [client_messages[-1]]
 
 
 # --------------------------------------------------
@@ -325,8 +383,10 @@ async def chat(request: Request, user=Depends(require_user)):
     if messages[-1].get("role") != "user":
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "The last message must be from the user."})
 
-    if thread_id:
-        await asyncio.to_thread(threads.get_owned, thread_id, user["username"])
+    check_rate_limit(user)
+
+    stored = await asyncio.to_thread(threads.get_owned, thread_id, user["username"]) if thread_id else None
+    messages = trusted_messages(messages, stored)
 
     # Project scope: only the user's authorised datasets in active projects,
     # narrowed to the selected project when there is one. Checked before the
@@ -366,7 +426,11 @@ async def ask_question(request: QuestionRequest, user=Depends(require_user)):
     """Plain-text answer endpoint kept for scripts and the evaluation runner."""
 
     start_time = time.perf_counter()
-    question = request.question
+    check_rate_limit(user)
+    try:
+        question = check_question(request.question)
+    except GuardrailViolation as violation:
+        raise HTTPException(status_code=400, detail={"code": violation.code, "message": violation.message})
 
     try:
         await asyncio.to_thread(account.count_message, user)

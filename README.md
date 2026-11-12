@@ -161,7 +161,7 @@ Then open <http://localhost:3000>. To create an admin user inside the container:
 docker compose exec backend python -m scripts.create_user admin --role admin
 ```
 
-For production, set `COOKIE_SECURE=true` and `ALLOW_SIGNUP=false`, put HTTPS in front, and give the app a MongoDB user that can only read the business collections.
+For production, keep `ALLOW_SIGNUP=false` (the default) and `COOKIE_SECURE=true` (the default unless `FRONTEND_URL` is plain-HTTP localhost), put HTTPS in front, and set `MONGODB_READONLY_URI` to a MongoDB user with only the `read` role so model-generated queries cannot write even in theory. See `SECURITY_AUDIT_REPORT.md`.
 
 ---
 
@@ -224,7 +224,11 @@ All settings live in `.env` and are documented in [`.env.example`](.env.example)
 | `AGENT_MODEL` / `OPENUI_MODEL` | `google/gemini-2.5-flash` | Any OpenRouter model ID |
 | `QUERYABLE_COLLECTIONS` | *(all)* | Allowlist of collections the bot may read |
 | `JEV_ENABLED` | `true` | Use Jev for routing (falls back to LangChain) |
-| `ALLOW_SIGNUP` | `true` | Show self-service sign-up |
+| `ALLOW_SIGNUP` | `false` | Show self-service sign-up (keep off on shared deployments) |
+| `SELF_SERVICE_PLANS` | `false` | Let users pick their own plan (demo only; otherwise admins assign plans) |
+| `CHAT_REQUESTS_PER_MINUTE` | `20` | Chat / ask requests per user per minute (`0` = no limit) |
+| `LOGIN_MAX_ATTEMPTS_PER_ACCOUNT` | `20` | Failed logins for one username from any address before it is locked |
+| `MONGODB_READONLY_URI` | — | Read-only MongoDB user for model-generated queries and schema sampling |
 | `GRAPHITI_ENABLED` | `false` | Add Graphiti/Neo4j context (needs Neo4j + `pip install graphiti-core neo4j`) |
 | `LANGFUSE_*` | — | Optional tracing |
 
@@ -250,7 +254,8 @@ The interactive docs are at **<http://127.0.0.1:8000/docs>** while the backend r
 | `/api/projects/*`, `/api/catalog-meta/{name}` | Projects: list, create, on/off, access, datasets, tags (admin writes) |
 | `/api/dashboard?project=&collection=` | Auto-built charts for a project or dataset |
 | `/api/opportunities`, `/api/opportunities/match` | Use cases with evidence; customer-profile matching |
-| `/api/livez`, `/api/readyz`, `/api/health` | Health probes |
+| `/api/livez`, `/api/readyz`, `/api/health` | Health probes (public, no configuration details) |
+| `/api/health/details` | Provider and integration status (signed-in users) |
 
 You can call the API with a personal key from **Settings → API keys**:
 

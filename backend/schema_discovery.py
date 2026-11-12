@@ -3,7 +3,7 @@ import copy
 import threading
 import time
 
-from backend.db import business_collection_names, db
+from backend.db import business_collection_names, read_db as db
 
 SAMPLE_LIMIT = 1000
 

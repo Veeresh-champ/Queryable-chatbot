@@ -12,6 +12,7 @@ Writes each answer to logs/probe_<n>.openui.txt and prints a JSON summary.
 import json
 import sys
 import time
+import secrets
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -23,7 +24,8 @@ from backend.auth import create_user, users  # noqa: E402
 from backend.openui_validator import validate  # noqa: E402
 from backend.threads import threads  # noqa: E402
 
-USER, PASSWORD = "probe_tmp", "probe-pass-12345"
+# Throwaway account: random password per run, deleted again in ``finally``.
+USER, PASSWORD = "probe_tmp", secrets.token_urlsafe(24)
 DEFAULT_QUESTIONS = [
     "Which deployment type has the highest average annual HR technology spend?",
     "Show total annual HR tech spend by country for the top 5 countries",

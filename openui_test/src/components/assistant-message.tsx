@@ -285,7 +285,22 @@ export function QueryableAssistantMessage({ message, isStreaming }: { message: A
         });
       } else if (event.type === BuiltinActionType.OpenUrl) {
         const url = event.params?.["url"];
-        if (typeof url === "string" && url) window.open(url, "_blank", "noopener,noreferrer");
+        // Links come from model output: only https, and the user sees where
+        // they are going before a new tab opens (phishing protection).
+        if (typeof url !== "string" || !url) return;
+        let target: URL;
+        try {
+          target = new URL(url);
+        } catch {
+          return;
+        }
+        if (target.protocol !== "https:") return;
+        if (window.confirm(`Open this link in a new tab?
+
+${target.hostname}
+${target.href}`)) {
+          window.open(target.href, "_blank", "noopener,noreferrer");
+        }
       }
     },
     [processMessage],

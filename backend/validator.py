@@ -1,3 +1,6 @@
+import re
+
+from backend.guardrails import is_pii_field
 from backend.schema_discovery import get_schema
 
 
@@ -37,6 +40,72 @@ ALLOWED_EXPRESSION_OPERATORS = {
     "$switch", "$isArray", "$setUnion", "$concatArrays", "$slice", "$filter", "$map", "$in",
     "$cmp", "$eq", "$ne", "$gt", "$gte", "$lt", "$lte", "$and", "$or", "$not", "$isNumber",
 }
+
+
+# Limits that keep generated queries cheap (see the security audit, L-4).
+MAX_PIPELINE_STAGES = 30
+MAX_JOINS = 5            # $lookup + $unionWith stages, nested ones included
+MAX_REGEX_CHARS = 200
+# A quantified group that is itself quantified, e.g. (a+)+ or (\w*)*: the
+# classic catastrophic-backtracking shape.
+NESTED_QUANTIFIER = re.compile(r"\([^)]*[+*}][^)]*\)\s*[+*{]")
+
+
+def references_pii(value):
+    """True when an aggregation value reads a PII field ("$phone", "$contact.email").
+
+    Field names can be renamed inside a pipeline ({"p": "$phone"}), which
+    would hide them from the name-based masking in ``guardrails.redact_pii``.
+    Generated queries may filter on such fields but never copy them out.
+    """
+
+    if isinstance(value, str):
+        if value.startswith("$$"):
+            # Variables are field paths too: "$$ROOT.phone", "$$CURRENT.email",
+            # "$$c.phone" inside $map/$filter. Check the path after the name.
+            _, _, path = value[2:].partition(".")
+            return bool(path) and is_pii_field(path)
+        return value.startswith("$") and is_pii_field(value[1:])
+    if isinstance(value, list):
+        return any(references_pii(item) for item in value)
+    if isinstance(value, dict):
+        return any(references_pii(item) for item in value.values())
+    return False
+
+
+def safe_regex(pattern):
+    return isinstance(pattern, str) and len(pattern) <= MAX_REGEX_CHARS and not NESTED_QUANTIFIER.search(pattern)
+
+
+def _regexes(value):
+    """Every $regex pattern anywhere inside a filter or pipeline."""
+
+    if isinstance(value, list):
+        for item in value:
+            yield from _regexes(item)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            if key == "$regex":
+                yield item
+            elif key == "regex" and isinstance(item, str):  # $regexMatch style
+                yield item
+            else:
+                yield from _regexes(item)
+
+
+def _join_count(pipeline):
+    count = 0
+    for stage in pipeline if isinstance(pipeline, list) else []:
+        if not isinstance(stage, dict):
+            continue
+        for name, body in stage.items():
+            if name in {"$lookup", "$unionWith"}:
+                count += 1
+                if isinstance(body, dict):
+                    count += _join_count(body.get("pipeline"))
+            elif name == "$facet" and isinstance(body, dict):
+                count += sum(_join_count(sub) for sub in body.values())
+    return count
 
 
 def get_available_schema():
@@ -187,7 +256,7 @@ def validate_pipeline_value(value):
 
 
 def validate_pipeline(pipeline):
-    if not isinstance(pipeline, list) or not pipeline:
+    if not isinstance(pipeline, list) or not pipeline or len(pipeline) > MAX_PIPELINE_STAGES:
         return False
 
     schema = get_available_schema()
@@ -380,13 +449,19 @@ def validate_query(query):
     if not validate_filters(collection, filters):
         return False
 
+    if not all(safe_regex(pattern) for pattern in _regexes(filters)):
+        return False
+
     if operation == "count":
         return True
 
     if operation == "distinct":
         field = query.get("field")
+        # distinct returns bare values under "value", so masking by field
+        # name cannot apply: PII fields are refused instead.
         return (
             isinstance(field, str)
+            and not is_pii_field(field)
             and validate_fields(collection, [field])
         )
 
@@ -398,6 +473,14 @@ def validate_query(query):
         if filters:
             return False
 
-        return validate_pipeline(query.get("pipeline", []))
+        pipeline = query.get("pipeline", [])
+        if references_pii(pipeline):
+            return False
+        if not all(safe_regex(pattern) for pattern in _regexes(pipeline)):
+            return False
+        if _join_count(pipeline) > MAX_JOINS:
+            return False
+
+        return validate_pipeline(pipeline)
 
     return False

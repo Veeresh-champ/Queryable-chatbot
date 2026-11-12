@@ -31,6 +31,7 @@ import csv
 import io
 import json
 import re
+import zipfile
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -209,11 +210,25 @@ def _read_json(content):
     return rows
 
 
+MAX_UNPACKED_BYTES = 250 * 1024 * 1024  # an .xlsx is a ZIP: refuse "zip bombs"
+
+
+def _check_unpacked_size(content):
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            total = sum(item.file_size for item in archive.infolist())
+    except zipfile.BadZipFile as error:
+        raise _bad("bad_file", "The Excel file could not be read. Save it as .xlsx and try again.") from error
+    if total > MAX_UNPACKED_BYTES:
+        raise _bad("too_large", "This workbook expands to more data than the importer accepts.", 413)
+
+
 def _read_xlsx(content, sheet=None):
     try:
         from openpyxl import load_workbook
     except ImportError as error:  # pragma: no cover - dependency missing
         raise _bad("unsupported", "Excel support is not installed on the server (openpyxl).", 500) from error
+    _check_unpacked_size(content)
     try:
         book = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     except Exception as error:  # noqa: BLE001 - any corrupt workbook

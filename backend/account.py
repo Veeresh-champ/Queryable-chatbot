@@ -11,7 +11,7 @@ API consoles:
 * Usage is counted per user per UTC day in ``app_usage``.
 
     GET    /api/account/overview         -> plan, plans, usage, profile
-    POST   /api/account/plan             -> switch plan
+    POST   /api/account/plan             -> switch plan (admins, or SELF_SERVICE_PLANS=true)
     GET    /api/account/keys             -> key list (no secrets)
     POST   /api/account/keys             -> new key (secret returned once)
     DELETE /api/account/keys/{id}        -> revoke
@@ -208,6 +208,7 @@ def overview(user=Depends(require_session_user)):
         "plan": plan["id"],
         "plans": list(PLANS.values()),
         "billing_simulated": True,
+        "self_service_plans": settings.self_service_plans or user["role"] == "admin",
         "limits_enforced": settings.plan_limits_enforced and user["role"] != "admin",
         "usage": _usage_summary(user),
         "api_keys": {
@@ -223,6 +224,14 @@ class PlanChange(BaseModel):
 
 @router.post("/plan")
 def change_plan(payload: PlanChange, user=Depends(require_session_user)):
+    # Billing is simulated: letting users pick a plan would let anyone lift
+    # their own message limit. Admins assign plans in the Admin console.
+    if not settings.self_service_plans and user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "plan_change_forbidden",
+                    "message": "Plans are assigned by an administrator. Ask an admin to change yours."},
+        )
     if payload.plan not in PLANS:
         raise HTTPException(status_code=400, detail={"code": "unknown_plan", "message": "Unknown plan."})
     users.update_one({"username": user["username"]}, {"$set": {"plan": payload.plan}})

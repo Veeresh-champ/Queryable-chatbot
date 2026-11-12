@@ -31,6 +31,16 @@ client = MongoClient(
 
 db = client[settings.mongodb_db]
 
+# Connection used for model-generated queries and schema sampling. With
+# MONGODB_READONLY_URI set to a user holding only the ``read`` role, MongoDB
+# itself refuses any write, even if a query ever got past the validator.
+read_client = (
+    MongoClient(settings.mongodb_readonly_uri, serverSelectionTimeoutMS=3000, connectTimeoutMS=5000)
+    if settings.mongodb_readonly_uri
+    else client
+)
+read_db = read_client[settings.mongodb_db]
+
 # Collections of the current request's project (None = every enabled dataset).
 _scope = contextvars.ContextVar("qc_project_scope", default=None)
 

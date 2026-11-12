@@ -31,4 +31,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 # One worker: login lockout, the query cache and /api/metrics live in process
 # memory. Scale with more containers only after moving them to MongoDB/Redis.
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY:-1} --proxy-headers --forwarded-allow-ips='*'"]
+# X-Forwarded-For is trusted only from FORWARDED_ALLOW_IPS (uvicorn reads it;
+# default 127.0.0.1). Never use '*': clients could then pick their own IP and
+# bypass the per-IP login and sign-up limits.
+ENV FORWARDED_ALLOW_IPS=127.0.0.1
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY:-1} --proxy-headers"]

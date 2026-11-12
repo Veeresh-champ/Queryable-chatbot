@@ -25,7 +25,23 @@ def test_overview_lists_plans_and_usage(logged_in):
     assert body["profile"]["username"] == "tester"
 
 
-def test_plan_switch(logged_in):
+def test_plan_switch_is_admin_only_by_default(logged_in):
+    from backend.auth import users
+
+    response = logged_in.post("/api/account/plan", json={"plan": "team"})
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "plan_change_forbidden"
+    assert logged_in.get("/api/account/overview").json()["plan"] == "free"
+    assert logged_in.get("/api/account/overview").json()["self_service_plans"] is False
+    users.update_one({"username": "tester"}, {"$unset": {"plan": ""}})
+
+
+def test_plan_switch(logged_in, monkeypatch):
+    from dataclasses import replace
+
+    from backend import account
+
+    monkeypatch.setattr(account, "settings", replace(account.settings, self_service_plans=True))
     assert logged_in.post("/api/account/plan", json={"plan": "pro"}).json() == {"plan": "pro"}
     assert logged_in.get("/api/account/overview").json()["plan"] == "pro"
     assert logged_in.get("/api/auth/me").json()["user"]["plan"] == "pro"
@@ -65,7 +81,7 @@ def test_revoked_key_stops_working(logged_in):
 
 
 def test_key_limit_follows_plan(logged_in):
-    from backend.auth import api_keys
+    from backend.auth import api_keys, users
 
     api_keys.delete_many({"username": "tester"})
     for _ in range(2):
@@ -73,8 +89,9 @@ def test_key_limit_follows_plan(logged_in):
     third = logged_in.post("/api/account/keys", json={})
     assert third.status_code == 403
     assert third.json()["error"]["code"] == "key_limit"
-    logged_in.post("/api/account/plan", json={"plan": "pro"})
+    users.update_one({"username": "tester"}, {"$set": {"plan": "pro"}})  # admins assign plans
     assert logged_in.post("/api/account/keys", json={}).status_code == 201
+    users.update_one({"username": "tester"}, {"$unset": {"plan": ""}})
     api_keys.delete_many({"username": "tester"})
 
 

@@ -7,7 +7,8 @@
 * Expiry: absolute (SESSION_TTL_MINUTES) and idle (SESSION_IDLE_MINUTES).
 * Logout deletes the server-side session, so the cookie stops working
   immediately.
-* Brute force: failed logins per username+IP are locked out temporarily.
+* Brute force: failed logins per username+IP, and per username from any
+  address (LOGIN_MAX_ATTEMPTS_PER_ACCOUNT), are locked out temporarily.
 """
 
 import hashlib
@@ -109,14 +110,21 @@ def _locked_for(key):
         return max(0, int(remaining)) if remaining > 0 else 0
 
 
-def _register_failure(key):
+def _account_key(username):
+    """Counter for one username across every client address."""
+
+    return f"{username}|*"
+
+
+def _register_failure(key, max_attempts=None):
+    max_attempts = max_attempts or settings.login_max_attempts
     now = time.monotonic()
     with _failures_lock:
         count, first, locked_until = _failures.get(key, (0, now, 0))
         if now - first > settings.login_lockout_seconds:
             count, first = 0, now
         count += 1
-        if count >= settings.login_max_attempts:
+        if count >= max_attempts:
             locked_until = now + settings.login_lockout_seconds
         _failures[key] = (count, first, locked_until)
 
@@ -273,8 +281,9 @@ class LoginRequest(BaseModel):
 def login(payload: LoginRequest, request: Request, response: Response):
     username = payload.username.strip().lower()
     key = _attempt_key(username, request)
+    account_key = _account_key(username)
 
-    locked = _locked_for(key)
+    locked = max(_locked_for(key), _locked_for(account_key))
     if locked:
         raise HTTPException(
             status_code=429,
@@ -288,12 +297,14 @@ def login(payload: LoginRequest, request: Request, response: Response):
 
     if not user or not verify_password(payload.password, user.get("password_hash", "")):
         _register_failure(key)
+        _register_failure(account_key, settings.login_max_attempts_per_account)
         raise HTTPException(
             status_code=401,
             detail={"code": "invalid_credentials", "message": "Incorrect username or password."},
         )
 
     _clear_failures(key)
+    _clear_failures(account_key)
     token = create_session(user)
     _set_cookie(response, token)
 

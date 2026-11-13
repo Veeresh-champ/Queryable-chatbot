@@ -83,6 +83,10 @@ class Settings:
     )
     thesys_model: str = os.getenv("THESYS_MODEL", "openai/gpt-5")
     llm_timeout_seconds: float = _float("LLM_TIMEOUT_SECONDS", 60)
+    # Hard caps on generated tokens, so a runaway answer stops being billed.
+    # (OpenUI answers are also cut at 60 000 characters, about 15 000 tokens.)
+    answer_max_tokens: int = _int("ANSWER_MAX_TOKENS", 16000)
+    query_max_tokens: int = _int("QUERY_MAX_TOKENS", 2000)
     # Fast mode: skip the model's hidden "thinking" pass. Measured on query
     # generation with gemini-2.5-flash (interleaved runs): median 4.8 s
     # instead of 8.9 s, same output. OpenRouter's provider "sort: latency"

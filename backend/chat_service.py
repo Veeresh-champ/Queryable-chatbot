@@ -44,9 +44,15 @@ from backend.openui_engine import (
 from backend.schema_discovery import get_schema
 from backend.threads import message_text, save_messages
 
-def model_options():
-    """Models the user may pick in the OpenUI ModelSwitcher (OpenRouter ids)."""
+def model_options(user=None):
+    """Models the user may pick in the OpenUI ModelSwitcher (OpenRouter ids).
 
+    Free-plan users get the default model only, so nobody can run up cost by
+    choosing the most expensive model; paid plans and administrators may pick.
+    """
+
+    if user is not None and user.get("role") != "admin"             and (user.get("plan") or settings.default_plan) == "free":
+        return [settings.openui_model]
     options = list(settings.openui_model_options)
     if settings.openui_model not in options:
         options.insert(0, settings.openui_model)
@@ -148,7 +154,7 @@ class ChatRun:
         self.thread_id = thread_id
         self.run_id = str(uuid.uuid4())
         self.messages = messages
-        self.model = model if model in model_options() else None
+        self.model = model if model in model_options(user) else None
         self.generated = []
         # (tool name, args, result) of every tool call, saved as artifacts.
         self.tool_results = []

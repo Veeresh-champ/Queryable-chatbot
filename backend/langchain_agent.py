@@ -27,6 +27,7 @@ llm = ChatOpenAI(
     base_url=settings.openrouter_base_url,
     api_key=settings.openrouter_api_key or "missing-openrouter-key",
     timeout=settings.llm_timeout_seconds,
+    max_tokens=settings.query_max_tokens,
     max_retries=1,
     extra_body=openrouter_speed_options() or None,
 )

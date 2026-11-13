@@ -257,6 +257,7 @@ def resolve_api_key(key):
         "username": user["username"],
         "display_name": user.get("display_name") or user["username"],
         "role": user.get("role", "analyst"),
+        "plan": user.get("plan") or settings.default_plan,
         "auth": "api_key",
     }
 

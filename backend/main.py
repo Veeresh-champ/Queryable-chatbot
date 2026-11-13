@@ -274,7 +274,7 @@ def trusted_messages(client_messages, stored_thread):
 
 @app.get("/api/models")
 def models(user=Depends(require_user)):
-    return {"default": settings.openui_model, "models": model_options()}
+    return {"default": settings.openui_model, "models": model_options(user)}
 
 
 @app.get("/api/metrics")

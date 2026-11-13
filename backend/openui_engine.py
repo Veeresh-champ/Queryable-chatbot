@@ -688,6 +688,7 @@ async def stream_openui(messages, model_override=None, stage="openui generation"
                 "messages": messages,
                 "stream": True,
                 "temperature": 0.2,
+                "max_tokens": settings.answer_max_tokens,
             }
             if name == "openrouter":
                 body["usage"] = {"include": True}

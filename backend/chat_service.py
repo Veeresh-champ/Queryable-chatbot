@@ -128,8 +128,16 @@ def _history(messages):
     for message in messages[:-1]:
         role = message.get("role")
         text = message_text(message)
-        if role in {"user", "assistant"} and text:
-            history.append({"role": role, "content": text})
+        if role not in {"user", "assistant"} or not text:
+            continue
+        if role == "user":
+            # A turn the guardrails refused is still saved in the thread;
+            # never replay it to the model as trusted context.
+            try:
+                check_question(text)
+            except GuardrailViolation:
+                continue
+        history.append({"role": role, "content": text})
     return history
 
 

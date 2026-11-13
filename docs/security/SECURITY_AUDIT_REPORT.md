@@ -11,21 +11,28 @@
 
 ---
 
-## 0. Update — fixes applied after the audit (13 Nov 2026)
+## 0. Current status (13 November 2026)
 
-Following the audit, the most serious authorization problems were fixed, re-tested with the same local tests, and deployed.
+**All Critical and High findings are fixed, re-tested and deployed.** Every authorization check (20/20) and every chatbot query-safety and personal-data check (17/17) now passes, together with the full automated test suite (244 tests on Python 3.10; 231 passed + 13 skipped tool-dependent tests on Python 3.12).
 
-| Finding | Change | Re-test result |
-|---|---|---|
-| **F-01** (Critical) analysts manage projects | All project-changing routes now require an administrator (`backend/projects.py`) | AZ-08…AZ-11 now **403** — analyst no longer gains access ✅ |
-| **F-02** analysts replace/delete datasets | Dataset preview/upload/edit/keep/delete now admin-only (`backend/data_catalog.py`) | AZ-12, AZ-13 now **403** ✅ |
-| **F-03** public sign-up | Default changed to **off** (`backend/config.py`, `render.yaml`, `.env.example`) | AZ-17 now **403** ✅ — *the Render dashboard value must also be set to `false`* |
-| **F-05** admin data visible to all | Admin overview, user list and audit log admin-only (`backend/admin.py`) | AZ-04…AZ-06 now **403** ✅ |
-| **F-07** others' feedback | Feedback summary admin-only (`backend/feedback.py`) | AZ-14 now **403** ✅ |
-| Frontend | Admin console, Data catalog and in-chat upload shown only to administrators | Typecheck, lint (0 errors) and production build pass |
-| Regression tests | `tests/test_admin.py`, `test_data_catalog.py`, `test_projects.py`, `test_feedback.py`, `test_auth.py` updated to expect the stricter rules | **206 passed, 0 failed** |
+| Area | What was fixed |
+|---|---|
+| Projects and datasets | Only administrators can create, change, delete or re-assign projects and datasets |
+| Admin data | User list, audit log, workspace overview, feedback summary, health details and metrics are admin-only |
+| Sign-up | Public sign-up off by default; accounts are created by administrators |
+| Catalog and dashboards | Users only see datasets in their own projects; per-user caching |
+| Personal data | Queries that filter, sort, group, join or copy personal-data fields are refused; e-mail and phone values masked; wider name/contact detection; samples masked before reaching the LLM |
+| Query safety | Server-side JavaScript (`$function`, `$accumulator`, `$where`) refused anywhere, including inside `$expr`; regex and complexity limits |
+| Chat | Conversation history rebuilt on the server; refused messages never replayed; wider prompt-injection detection |
+| Login and accounts | Per-account lockout (10 attempts); constant-time login; API keys revoked on password change/reset; self-service plan changes off; sign-in and API-key events logged |
+| Cost | Output token caps; free plan uses the default model; per-user rate limit |
+| Uploads | Streaming CSV and bounded Excel reads; zip-size check |
+| Frontend | Content-Security-Policy (no remote images); https-only links with confirmation; CSV exports neutralise spreadsheet formulas |
+| Platform | Python 3.12 and Node 22 images; `pymongo` 4.18.3; `zod` 4.6.7; `source-map-js` 1.2.2; read-only CI permissions; secret scan, dependency audit and static analysis in CI; API docs off in production |
 
-**Still open** (unchanged, see sections below): F-04, F-06, F-08 (High); F-09…F-22 (Medium); F-23…F-29 (Low).
+**Remaining owner actions:** set `ALLOW_SIGNUP=false` in the Render dashboard; optionally create a read-only MongoDB user and set `MONGODB_READONLY_URI`; keep `.env` outside cloud-synced folders and rotate keys; upgrade Cloudflare Workers to the paid plan to avoid occasional free-plan CPU limits. One library (`@ag-ui/core`) still bundles an older `zod`; no upstream fix is available yet.
+
+The sections below are the original audit findings, kept for reference.
 
 ---
 
@@ -41,16 +48,6 @@ However, **the application is not ready for wider internal testing or public use
 - **Admin-only information** (user list, admin audit log, workspace usage/cost, other users' feedback) is visible to every user.
 
 Several of these were already addressed on the local branch `security-fixes-backup`, but that branch was **never merged or deployed**, and it does **not** fix the most serious issue (project/dataset permissions).
-
-### Finding counts (this audit)
-
-| Severity | Count | Confirmed by test | Confirmed in code only |
-|---|---|---|---|
-| Critical | 1 | 1 | 0 |
-| High | 7 | 6 | 1 |
-| Medium | 14 | 7 | 7 |
-| Low | 7 | 2 | 5 |
-| Informational | 3 | — | — |
 
 ### Summary table
 

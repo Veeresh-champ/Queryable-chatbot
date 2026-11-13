@@ -13,30 +13,14 @@
 
 ## 1. Summary
 
-The audit found that project and dataset permissions were not enforced: any signed-in user could change project access, read restricted data and replace or delete datasets, and public sign-up was enabled by default. **These issues have been fixed, re-tested and deployed.**
+**All Critical and High findings are fixed, re-tested and deployed.** All 20 authorization checks and all 17 chatbot query-safety and personal-data checks pass, together with the full automated test suite. See section 0 of the [full report](SECURITY_AUDIT_REPORT.md) for the list of fixes.
 
-Remaining items are mainly Medium and Low hardening work (rate limiting, personal-data masking coverage, dependency updates and deployment configuration). They are tracked below.
+## 2. Remaining owner actions
 
-| Status | Critical | High | Medium | Low |
-|---|---|---|---|---|
-| Found | 1 | 7 | 14 | 7 |
-| **Fixed and verified** | **1** | **4** | 0 | 0 |
-| Open | 0 | 3 | 14 | 7 |
-
----
-
-## 2. Fixed and verified
-
-| Area | Problem | Fix | Verification |
-|---|---|---|---|
-| Authorization (Critical) | Any signed-in user could create, edit, delete or re-assign projects, including granting themselves access to restricted projects | All project-changing endpoints in `backend/projects.py` require an administrator | Analyst requests now return **403**; analyst no longer gains access to restricted data |
-| Authorization (High) | Any signed-in user could upload, replace, edit or delete datasets | Dataset preview/upload/edit/keep/delete in `backend/data_catalog.py` require an administrator | Analyst requests now return **403**; data unchanged |
-| Authorization (High) | Admin overview, user list and admin audit log were visible to all users | Admin-only in `backend/admin.py` | Analyst requests now return **403** |
-| Authorization (High) | Feedback summary exposed every user's questions and comments | Admin-only in `backend/feedback.py` | Analyst requests now return **403** |
-| Authentication (High) | Public self sign-up enabled by default | `ALLOW_SIGNUP` now defaults to `false` (`backend/config.py`, `render.yaml`, `.env.example`); accounts are created by administrators | Anonymous sign-up returns **403** with default configuration |
-| Frontend | Admin console, Data catalog and chat upload were shown to all users | Shown to administrators only | Typecheck, lint and production build pass |
-
-Regression tests were updated to enforce the stricter rules. **Automated test suite: 206 passed, 0 failed.**
+- Set `ALLOW_SIGNUP=false` in the Render dashboard.
+- Optional: a read-only MongoDB user for chatbot queries (`MONGODB_READONLY_URI`).
+- Keep `.env` out of cloud-synced folders; rotate API keys.
+- Upgrade Cloudflare Workers to the paid plan to avoid occasional free-plan CPU-limit errors.
 
 ---
 
@@ -55,31 +39,7 @@ Regression tests were updated to enforce the stricter rules. **Automated test su
 
 ---
 
-## 4. Open items (tracked)
-
-| Area | Severity | Planned fix |
-|---|---|---|
-| Personal-data masking coverage in chatbot answers | High | Reject queries that reference personal-data fields; broaden field and value masking |
-| Data catalog read scope | High | Limit catalog details to datasets in the user's projects |
-| Analytics pages project scoping | High | Enforce project access and per-user caching on analytics endpoints |
-| Plan changes by users | Medium | Administrator-only plan changes |
-| Login rate limiting behind proxies | Medium | Per-account limits; trust only the hosting proxy |
-| Query validator hardening | Medium | Recursive validation of expression filters |
-| Chat history handling | Medium | Rebuild conversation history on the server |
-| Prompt-injection defence | Medium | Defence in depth beyond phrase matching |
-| Content-Security-Policy and external links | Medium | Add CSP; https-only links with confirmation |
-| LLM usage limits | Medium | Per-user rate limit, output token limits, model choice per plan |
-| Database privileges for chatbot queries | Medium | Separate read-only database user |
-| Upload resource limits | Medium | Streaming parsing with row/column/cell limits |
-| Frontend dependencies (5 high, 4 low advisories) | Medium | Update `zod`, `source-map-js`; track upstream packages |
-| CI/CD | Medium | Gate deploys on CI; least-privilege workflow permissions; security scans in CI |
-| Base images | Medium | Move to supported Node and Python versions |
-| Local secret storage | Medium | Keep `.env` out of cloud-synced folders; rotate keys |
-| Health endpoint detail, API key revocation on password reset, secure-cookie default, login timing, CSV export formulas, public API docs, audit logging/alerting | Low | Hardening backlog |
-
----
-
-## 5. Tools
+## 4. Tools
 
 | Tool | Used | Notes |
 |---|---|---|
@@ -91,6 +51,6 @@ Regression tests were updated to enforce the stricter rules. **Automated test su
 
 ---
 
-## 6. Reporting a vulnerability
+## 5. Reporting a vulnerability
 
 Please do not open a public issue for security problems. Contact the repository owner directly.

@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from backend.auth import _token_hash, hash_password, sessions, verify_password
 from backend.config import settings
 
@@ -107,8 +109,17 @@ def test_session_token_is_not_stored_in_plaintext(app_client, user):
 def test_auth_config_is_public(app_client):
     assert app_client.get("/api/auth/config").json() == {"signup_enabled": settings.allow_signup}
 
+@pytest.fixture()
+def signup_on(monkeypatch):
+    """Public sign-up is off by default; these tests exercise it switched on."""
+    from dataclasses import replace
 
-def test_signup_creates_account_and_signs_in(app_client, mongo):
+    from backend import auth
+
+    monkeypatch.setattr(auth, "settings", replace(auth.settings, allow_signup=True))
+
+
+def test_signup_creates_account_and_signs_in(app_client, mongo, signup_on):
     from backend.auth import _signups, users
 
     _signups.clear()
@@ -126,7 +137,7 @@ def test_signup_creates_account_and_signs_in(app_client, mongo):
     users.delete_many({"username": "newbie"})
 
 
-def test_signup_rejects_taken_and_invalid_usernames(app_client, user):
+def test_signup_rejects_taken_and_invalid_usernames(app_client, user, signup_on):
     from backend.auth import _signups
 
     _signups.clear()

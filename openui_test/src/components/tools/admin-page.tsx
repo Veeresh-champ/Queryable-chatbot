@@ -709,9 +709,9 @@ export function AdminPage({ isAdmin, canManageUsers = false }: { isAdmin: boolea
 
   if (!isAdmin) {
     return (
-      <ToolPage icon={<ShieldCheck size={13} />} eyebrow="Admin console" title="Sign in required">
+      <ToolPage icon={<ShieldCheck size={13} />} eyebrow="Admin console" title="Administrators only">
         <div className="qc-state qc-state--error" role="alert">
-          <ShieldCheck size={18} /> <span>Sign in to open the admin console.</span>
+          <ShieldCheck size={18} /> <span>You need an administrator account to open the admin console.</span>
         </div>
       </ToolPage>
     );

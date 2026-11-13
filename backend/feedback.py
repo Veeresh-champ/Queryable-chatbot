@@ -18,7 +18,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.auth import require_user
+from backend.auth import require_session_user, require_user
 from backend.db import db
 from backend.observability import logger
 from backend.threads import get_owned, message_text
@@ -150,7 +150,9 @@ def thread_ratings(thread_id: str, user=Depends(require_user)):
 
 
 @router.get("/summary")
-def summary(user=Depends(require_user)):
+def summary(user=Depends(require_session_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail={"code": "forbidden", "message": "Administrators only."})
 
     totals = {row["_id"]: row["count"] for row in feedback.aggregate(
         [{"$group": {"_id": "$rating", "count": {"$sum": 1}}}]

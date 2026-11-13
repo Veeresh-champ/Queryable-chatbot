@@ -20,9 +20,10 @@ def admin_client(app_client, user):
     admin.audit_log.delete_many({})
 
 
-def test_analysts_can_view_but_not_manage_users(logged_in):
+def test_analysts_can_neither_view_nor_manage_users(logged_in):
+    # The user list, audit log and workspace overview are administrator data.
     for url in ("/api/admin/overview", "/api/admin/users", "/api/admin/audit"):
-        assert logged_in.get(url).status_code == 200
+        assert logged_in.get(url).status_code == 403
     assert logged_in.post("/api/admin/users", json={"username": "newbie", "password": "longenough1"}).status_code == 403
     assert logged_in.patch("/api/admin/users/tester", json={"role": "admin"}).status_code == 403
     assert logged_in.post("/api/admin/users/tester/password", json={"new_password": "longenough1"}).status_code == 403

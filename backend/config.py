@@ -94,7 +94,7 @@ class Settings:
     login_lockout_seconds: int = _int("LOGIN_LOCKOUT_SECONDS", 300)
     # Self-service sign-up from the login page. Turn off for deployments
     # where accounts are issued with scripts/create_user.py only.
-    allow_signup: bool = _bool("ALLOW_SIGNUP", True)
+    allow_signup: bool = _bool("ALLOW_SIGNUP", False)
     signup_max_per_hour: int = _int("SIGNUP_MAX_PER_HOUR", 5)
 
     # Plans and API keys (Settings page). Billing is simulated: no payment

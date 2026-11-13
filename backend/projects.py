@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.admin import _audit, require_member
+from backend.admin import _audit, require_admin
 from backend.auth import require_user
 from backend.db import business_collection_names, db, invalidate_project_cache
 from backend.schema_discovery import clear_schema_cache
@@ -341,7 +341,7 @@ def assign(project_id, names, admin=None):
 
 
 @router.post("", status_code=201)
-def create_project(payload: NewProject, admin=Depends(require_member)):
+def create_project(payload: NewProject, admin=Depends(require_admin)):
     _check_access(payload.access)
     now = _now()
     doc = {
@@ -367,7 +367,7 @@ def create_project(payload: NewProject, admin=Depends(require_member)):
 
 
 @router.patch("/{project_id}")
-def update_project(project_id: str, payload: ProjectPatch, admin=Depends(require_member)):
+def update_project(project_id: str, payload: ProjectPatch, admin=Depends(require_admin)):
     _get(project_id)
     changes = payload.model_dump(exclude_none=True)
     if "access" in changes:
@@ -390,7 +390,7 @@ def update_project(project_id: str, payload: ProjectPatch, admin=Depends(require
 
 
 @router.delete("/{project_id}")
-def delete_project(project_id: str, admin=Depends(require_member)):
+def delete_project(project_id: str, admin=Depends(require_admin)):
     project = _get(project_id)
     projects.delete_one({"_id": project_id})
     db["chat_threads"].update_many({"project": project_id}, {"$unset": {"project": ""}})
@@ -400,7 +400,7 @@ def delete_project(project_id: str, admin=Depends(require_member)):
 
 
 @router.put("/{project_id}/datasets")
-def set_datasets(project_id: str, payload: DatasetList, admin=Depends(require_member)):
+def set_datasets(project_id: str, payload: DatasetList, admin=Depends(require_admin)):
     project = _get(project_id)
     names = _check_datasets(payload.datasets)
     projects.update_many({"_id": {"$ne": project_id}}, {"$pull": {"datasets": {"$in": names}}})
@@ -411,14 +411,14 @@ def set_datasets(project_id: str, payload: DatasetList, admin=Depends(require_me
 
 
 @router.post("/{project_id}/datasets/{name}")
-def add_dataset(project_id: str, name: str, admin=Depends(require_member)):
+def add_dataset(project_id: str, name: str, admin=Depends(require_admin)):
     _get(project_id)
     assign(project_id, [name], admin)
     return {"id": project_id, "datasets": _get(project_id).get("datasets")}
 
 
 @router.delete("/{project_id}/datasets/{name}")
-def remove_dataset(project_id: str, name: str, admin=Depends(require_member)):
+def remove_dataset(project_id: str, name: str, admin=Depends(require_admin)):
     _get(project_id)
     projects.update_one({"_id": project_id}, {"$pull": {"datasets": name}, "$set": {"updated_at": _now()}})
     _changed()
@@ -445,7 +445,7 @@ class MetaPatch(BaseModel):
 
 
 @meta_router.patch("/{name}")
-def update_meta(name: str, payload: MetaPatch, admin=Depends(require_member)):
+def update_meta(name: str, payload: MetaPatch, admin=Depends(require_admin)):
     _check_datasets([name])
     changes = payload.model_dump(exclude_none=True)
     if "tags" in changes:

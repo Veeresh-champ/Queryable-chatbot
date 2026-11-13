@@ -7,7 +7,7 @@ import { DatasetUpload, isDatasetFile } from "@/components/dataset-upload";
 import { useAsk } from "@/components/tools/shared";
 
 /**
- * Admin-only pages (Data catalog, Prompt library, Agent map, Integrations).
+ * Admin-only pages (Data catalog).
  * The sidebar hides them for other users and the API returns 403, so this
  * only catches someone opening the route directly.
  */

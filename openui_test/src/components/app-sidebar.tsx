@@ -45,10 +45,12 @@ const TOOLS = [
   { path: TOOL_ROUTES.geo, label: "Geo explorer", icon: <Globe2 size={16} /> },
 ];
 
-/** Workspace pages, open to every signed-in user. */
+/** Workspace pages. The Admin console and Data catalog (which change users,
+ * projects and datasets) are for administrators; the rest are read-only and
+ * open to every signed-in user. */
 const ADMIN_TOOLS = [
-  { path: TOOL_ROUTES.admin, label: "Admin console", icon: <ShieldCheck size={16} /> },
-  { path: TOOL_ROUTES.catalog, label: "Data catalog", icon: <Database size={16} /> },
+  { path: TOOL_ROUTES.admin, label: "Admin console", icon: <ShieldCheck size={16} />, adminOnly: true },
+  { path: TOOL_ROUTES.catalog, label: "Data catalog", icon: <Database size={16} />, adminOnly: true },
   { path: TOOL_ROUTES.prompts, label: "Prompt library", icon: <BookOpen size={16} /> },
   { path: TOOL_ROUTES.agents, label: "Agent map", icon: <Network size={16} /> },
   { path: TOOL_ROUTES.integrations, label: "Integrations", icon: <Plug size={16} /> },
@@ -167,7 +169,7 @@ export function renderSidebar({
 
       {user && (
         <SideSection id="admin" label="Admin">
-          {ADMIN_TOOLS.map((tool) => (
+          {ADMIN_TOOLS.filter((tool) => !("adminOnly" in tool && tool.adminOnly) || user.role === "admin").map((tool) => (
             <AgentInterface.SidebarItem
               key={tool.path}
               icon={tool.icon}

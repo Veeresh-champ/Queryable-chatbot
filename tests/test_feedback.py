@@ -96,7 +96,7 @@ def test_feedback_collection_is_hidden_from_the_chatbot():
 def test_summary_is_admin_only(answered_thread):
     client, thread_id = answered_thread
     rate(client, thread_id, rating="down", reasons=["wrong_numbers"])
-    assert client.get("/api/feedback/summary").status_code == 200
+    assert client.get("/api/feedback/summary").status_code == 403
 
     from backend.auth import users
 

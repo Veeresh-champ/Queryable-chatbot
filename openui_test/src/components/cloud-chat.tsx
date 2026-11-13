@@ -20,7 +20,7 @@ import { OpportunitiesPage } from "@/components/tools/opportunities-page";
 import { QueryableAssistantMessage } from "@/components/assistant-message";
 import { renderSidebar, SettingsButton, TOOL_ROUTES } from "@/components/app-sidebar";
 import { artifactRenderers as queryRenderers } from "@/components/query-inspector";
-import { ChatFileDrop } from "@/components/admin-only";
+import { AdminOnly, ChatFileDrop } from "@/components/admin-only";
 import { AdminPage } from "@/components/tools/admin-page";
 import { AgentMapPage } from "@/components/tools/agent-map-page";
 import { IntegrationsPage } from "@/components/tools/integrations-page";
@@ -220,7 +220,9 @@ export default function CloudChat() {
             <GeoExplorerPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.catalog}>
-            <CatalogPage />
+            <AdminOnly role={user ? user.role : null}>
+              <CatalogPage />
+            </AdminOnly>
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.prompts}>
             <PromptsPage />
@@ -232,7 +234,7 @@ export default function CloudChat() {
             <IntegrationsPage />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.admin}>
-            <AdminPage isAdmin={!!user} canManageUsers={user?.role === "admin"} />
+            <AdminPage isAdmin={user?.role === "admin"} canManageUsers={user?.role === "admin"} />
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.settings}>
             <SettingsPage
@@ -265,7 +267,7 @@ export default function CloudChat() {
           />
 
           <VoiceDock />
-          <ChatFileDrop enabled={!!user} />
+          <ChatFileDrop enabled={user?.role === "admin"} />
         </AgentInterface>
       </div>
     </div>

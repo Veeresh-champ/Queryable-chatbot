@@ -129,11 +129,11 @@ def test_upload_to_unknown_project_writes_nothing(admin_client):
 
 # ---------------------------------------------------------------- management & permissions
 
-def test_analysts_can_manage_projects(logged_in):
-    created = logged_in.post("/api/projects", json={"name": "Analyst Project"})
-    assert created.status_code == 201
-    project_id = created.json()["id"]
-    assert logged_in.delete(f"/api/projects/{project_id}").status_code == 200
+def test_only_admins_manage_projects(logged_in):
+    assert logged_in.post("/api/projects", json={"name": "Nope"}).status_code == 403
+    assert logged_in.patch("/api/projects/span-hr-tech", json={"enabled": False}).status_code == 403
+    assert logged_in.delete("/api/projects/span-hr-tech").status_code == 403
+    assert logged_in.patch("/api/catalog-meta/span_companies", json={"tags": ["x"]}).status_code == 403
 
 
 def test_dataset_lives_in_one_project_and_moves(admin_client):

@@ -112,7 +112,7 @@ def _counts_by_user(collection, match=None):
 # --------------------------------------------------
 
 @router.get("/overview")
-def overview(admin=Depends(require_member)):
+def overview(admin=Depends(require_admin)):
     days = _days()
     today = days[-1]
     week = set(days[-7:])
@@ -230,7 +230,7 @@ def _public_user(doc, usage_14d, last_day, conversations, artifact_counts, key_c
 
 
 @router.get("/users")
-def list_users(q: str | None = None, admin=Depends(require_member)):
+def list_users(q: str | None = None, admin=Depends(require_admin)):
     query = {}
     if q and q.strip():
         pattern = re.escape(q.strip()[:60])
@@ -385,7 +385,7 @@ def revoke_sessions(username: str, admin=Depends(require_admin)):
 # --------------------------------------------------
 
 @router.get("/audit")
-def audit(admin=Depends(require_member)):
+def audit(admin=Depends(require_admin)):
     return {
         "events": [
             {

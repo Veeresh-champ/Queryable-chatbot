@@ -41,6 +41,12 @@ def test_analysts_can_open_the_workspace_pages(logged_in, app_client):
     assert logged_in.get("/api/catalog").status_code == 200
     assert logged_in.get("/api/admin/agents").status_code == 200
     assert logged_in.get("/api/admin/integrations").status_code == 200
+    # Reading is open; changing datasets is for administrators.
+    assert logged_in.post("/api/catalog/preview", files=_file()).status_code == 403
+    assert logged_in.post("/api/catalog/upload", files=_file()).status_code == 403
+    assert logged_in.patch("/api/catalog/span_companies", json={"label": "x"}).status_code == 403
+    assert logged_in.post("/api/catalog/span_companies/keep").status_code == 403
+    assert logged_in.delete("/api/catalog/span_companies").status_code == 403
     logged_in.post("/api/auth/logout")
     assert app_client.get("/api/catalog").status_code == 401
 

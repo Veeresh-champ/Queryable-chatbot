@@ -36,7 +36,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-from backend.admin import _audit, require_member
+from backend.admin import _audit, require_admin, require_member
 from backend.config import INTERNAL_COLLECTIONS
 from backend import projects as project_store
 from backend.db import business_collection_names, db, disabled_collections, invalidate_project_cache
@@ -644,7 +644,7 @@ async def _read(file: UploadFile):
 async def preview(
     file: UploadFile = File(...),
     sheet: str | None = Form(None),
-    admin=Depends(require_member),
+    admin=Depends(require_admin),
 ):
     """Parse the file and show what would be imported, without writing anything."""
 
@@ -698,7 +698,7 @@ async def upload(
     project: str | None = Form(None),
     tags: str = Form(""),
     temporary: bool = Form(False),
-    admin=Depends(require_member),
+    admin=Depends(require_admin),
 ):
     """Import one file (or sheet) as a queryable collection, optionally into a project.
 
@@ -814,7 +814,7 @@ def _uploaded(name):
 
 
 @router.patch("/{name}")
-def update_dataset(name: str, payload: DatasetPatch, admin=Depends(require_member)):
+def update_dataset(name: str, payload: DatasetPatch, admin=Depends(require_admin)):
     _uploaded(name)
     changes = {key: value.strip() for key, value in payload.model_dump(exclude_none=True).items()}
     if changes:
@@ -824,7 +824,7 @@ def update_dataset(name: str, payload: DatasetPatch, admin=Depends(require_membe
 
 
 @router.post("/{name}/keep")
-def keep_dataset(name: str, admin=Depends(require_member)):
+def keep_dataset(name: str, admin=Depends(require_admin)):
     """Turn a "use without saving" upload into a saved dataset."""
 
     _uploaded(name)
@@ -834,7 +834,7 @@ def keep_dataset(name: str, admin=Depends(require_member)):
 
 
 @router.delete("/{name}")
-def delete_dataset(name: str, admin=Depends(require_member)):
+def delete_dataset(name: str, admin=Depends(require_admin)):
     doc = _uploaded(name)
     db[name].drop()
     datasets.delete_one({"name": name})

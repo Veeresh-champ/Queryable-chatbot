@@ -320,22 +320,26 @@ def _briefing(rows, breakdowns, drivers, distributions, profiles):
 
 # ---------------------------------------------------------------- payloads
 
-_CACHE = {"lab": (0.0, None), "overview": (0.0, None)}
+_CACHE = {"lab": (0.0, None, None), "overview": (0.0, None, None)}
 CACHE_SECONDS = 60
 
 
 def _cached(key, build):
-    at, value = _CACHE[key]
-    if value is not None and time.monotonic() - at < CACHE_SECONDS:
+    # Cached per access scope, so one user's view is never served to another.
+    from backend.db import current_scope
+
+    scope = current_scope()
+    at, value, cached_scope = _CACHE[key]
+    if value is not None and cached_scope == scope and time.monotonic() - at < CACHE_SECONDS:
         return value
     value = build()
-    _CACHE[key] = (time.monotonic(), value)
+    _CACHE[key] = (time.monotonic(), value, scope)
     return value
 
 
 def clear_cache():
     for key in _CACHE:
-        _CACHE[key] = (0.0, None)
+        _CACHE[key] = (0.0, None, None)
 
 
 def lab():

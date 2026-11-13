@@ -628,10 +628,18 @@ def catalog():
 
 @router.get("")
 def get_catalog(admin=Depends(require_member)):
-    """Collections and fields the chatbot can read (PII-masked samples). Admins only."""
+    """Collections and fields the chatbot can read (PII-masked samples).
+
+    Administrators see every collection. Other users see only the datasets in
+    projects they may use, so restricted or switched-off projects stay hidden.
+    """
 
     purge_expired()
-    return catalog()
+    full = catalog()
+    if admin.get("role") == "admin":
+        return full
+    allowed = project_store.allowed_collections(admin)
+    return {"collections": [c for c in full["collections"] if c["name"] in allowed]}
 
 
 def _check_name(name, mode):

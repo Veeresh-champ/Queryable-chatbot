@@ -109,6 +109,8 @@ class Settings:
     # Self-service sign-up from the login page. Off by default: accounts are
     # issued by an administrator (Admin console or scripts/create_user.py).
     allow_signup: bool = _bool("ALLOW_SIGNUP", False)
+    # Interactive /docs and /openapi.json; keep off in production.
+    expose_api_docs: bool = _bool("EXPOSE_API_DOCS", False)
     signup_max_per_hour: int = _int("SIGNUP_MAX_PER_HOUR", 5)
     # Chat and /ask requests per user per minute (protects LLM spend).
     chat_requests_per_minute: int = _int("CHAT_REQUESTS_PER_MINUTE", 20)

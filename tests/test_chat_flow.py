@@ -286,7 +286,11 @@ def test_unknown_model_is_ignored_and_allowlisted_model_used(logged_in, mocks):
 def test_metrics_report_latency_tokens_and_routes(logged_in, mocks):
     mocks.setattr(chat_service, "stream_openui", streaming(GOOD_UI))
     ask(logged_in, "Average spend by deployment type?")
-    metrics = logged_in.get("/api/metrics").json()
+    # /api/metrics is admin-only; analysts get 403, the snapshot itself is checked directly.
+    assert logged_in.get("/api/metrics").status_code == 403
+    from backend.observability import metrics_snapshot
+
+    metrics = metrics_snapshot()
     assert metrics["requests"] >= 1
     assert metrics["latency_p50_s"] is not None and metrics["latency_p95_s"] is not None
     assert "database_query" in metrics["by_route"]

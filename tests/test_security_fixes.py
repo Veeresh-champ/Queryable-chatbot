@@ -62,12 +62,18 @@ def test_analyst_cannot_make_themselves_admin(logged_in):
 
 
 @pytest.mark.parametrize("path", [
-    "/api/admin/overview", "/api/admin/users", "/api/admin/audit",
     "/api/admin/agents", "/api/admin/integrations", "/api/catalog", "/api/projects",
-    "/api/feedback/summary", "/api/health/details",
 ])
 def test_workspace_pages_are_open_to_members(logged_in, path):
     assert logged_in.get(path).status_code == 200
+
+
+@pytest.mark.parametrize("path", [
+    "/api/admin/overview", "/api/admin/users", "/api/admin/audit",
+    "/api/feedback/summary", "/api/health/details", "/api/metrics",
+])
+def test_admin_data_is_admin_only(logged_in, path):
+    assert logged_in.get(path).status_code == 403
 
 
 def test_admin_keeps_access(app_client, user, restricted_project):

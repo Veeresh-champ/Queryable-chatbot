@@ -487,7 +487,7 @@ def _briefing(rows, segments, drivers, pareto, revenue, streams):
     return " ".join(parts)
 
 
-_LAB_CACHE = {"at": 0.0, "value": None}
+_LAB_CACHE = {"at": 0.0, "value": None, "scope": None}
 LAB_CACHE_SECONDS = 60
 
 
@@ -496,10 +496,15 @@ def lab():
 
     import time
 
-    if _LAB_CACHE["value"] is not None and time.monotonic() - _LAB_CACHE["at"] < LAB_CACHE_SECONDS:
+    from backend.db import current_scope
+
+    # Cached per access scope, so one user's view is never served to another.
+    scope = current_scope()
+    if (_LAB_CACHE["value"] is not None and _LAB_CACHE.get("scope") == scope
+            and time.monotonic() - _LAB_CACHE["at"] < LAB_CACHE_SECONDS):
         return _LAB_CACHE["value"]
     value = _build_lab()
-    _LAB_CACHE.update(at=time.monotonic(), value=value)
+    _LAB_CACHE.update(at=time.monotonic(), value=value, scope=scope)
     return value
 
 

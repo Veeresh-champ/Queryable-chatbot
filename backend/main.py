@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from pymongo.errors import PyMongoError
 
 from backend import account, admin, agents, artifacts, auth, data_catalog, feedback, opportunities, projects, threads
+from backend.admin import require_admin
 from backend.auth import require_user
 from backend.chat_service import ChatRun, model_options, with_heartbeat
 from backend.config import settings
@@ -34,7 +35,11 @@ async def lifespan(app):
     executor.shutdown(wait=False, cancel_futures=True)
 
 
-app = FastAPI(title="Queryable Chatbot API", lifespan=lifespan)
+# Interactive API docs are off unless EXPOSE_API_DOCS=true (local development).
+_docs = settings.expose_api_docs
+app = FastAPI(title="Queryable Chatbot API", lifespan=lifespan,
+              docs_url="/docs" if _docs else None, redoc_url="/redoc" if _docs else None,
+              openapi_url="/openapi.json" if _docs else None)
 
 # Legacy static UI files are kept on disk for reference, but the single user
 # interface is the OpenUI frontend in openui_test/ (see "/" below).
@@ -195,8 +200,8 @@ def health():
 
 
 @app.get("/api/health/details")
-def health_details(user=Depends(require_user)):
-    """Configuration overview for signed-in users (not public)."""
+def health_details(user=Depends(require_admin)):
+    """Configuration overview for administrators (not public)."""
 
     return {
         **health(),
@@ -273,7 +278,7 @@ def models(user=Depends(require_user)):
 
 
 @app.get("/api/metrics")
-def metrics(user=Depends(require_user)):
+def metrics(user=Depends(require_admin)):
     return metrics_snapshot()
 
 
@@ -289,6 +294,8 @@ def _data_call(function, *args, **kwargs):
 
 
 DATASETS = {"span": (insights.overview, analytics.lab), "ibm_hr": (hr_analytics.overview, hr_analytics.lab)}
+# The collection each fixed dashboard reads; the user must be allowed to read it.
+DATASET_COLLECTIONS = {"span": "span_companies", "ibm_hr": "ibm_hr_employees"}
 
 
 def _dataset(name):
@@ -302,7 +309,9 @@ def _dataset(name):
 async def datasets(user=Depends(require_user)):
     """Datasets the Insights dashboard and Analytics lab can switch between."""
 
-    return {"datasets": await asyncio.to_thread(hr_analytics.datasets)}
+    allowed = await asyncio.to_thread(projects.allowed_collections, user, None)
+    every = await asyncio.to_thread(hr_analytics.datasets)
+    return {"datasets": [d for d in every if DATASET_COLLECTIONS.get(d["id"]) in allowed]}
 
 
 async def _scoped(user, project, function, *args):
@@ -317,12 +326,27 @@ async def _scoped(user, project, function, *args):
         return await asyncio.to_thread(_data_call, function, *args)
 
 
+async def _scoped_dataset(user, project, dataset, function):
+    """Like _scoped, but refuses when the dashboard's collection is outside the
+    user's projects (restricted, switched off, or not in the chosen project)."""
+
+    allowed = await asyncio.to_thread(projects.allowed_collections, user, project or None)
+    name = DATASET_COLLECTIONS[dataset]
+    # A collection that does not exist has nothing to leak (the dashboard shows
+    # an empty state); an existing one must be inside the user's projects.
+    if name not in allowed and name in await asyncio.to_thread(db.list_collection_names):
+        raise HTTPException(status_code=404, detail={"code": "not_available",
+                                                     "message": "This dataset is not available to you."})
+    with project_scope(allowed):
+        return await asyncio.to_thread(_data_call, function)
+
+
 @app.get("/api/insights/overview")
 async def insights_overview(dataset: str = "span", project: str | None = None, user=Depends(require_user)):
     """KPI tiles, chart panels, maps and headline insights for the dashboard."""
 
     overview, _ = _dataset(dataset)
-    return await _scoped(user, project, overview)
+    return await _scoped_dataset(user, project, dataset, overview)
 
 
 @app.get("/api/analytics/lab")
@@ -330,7 +354,7 @@ async def analytics_lab(dataset: str = "span", project: str | None = None, user=
     """Relationship views, statistics and forecast for the Analytics lab page."""
 
     _, lab = _dataset(dataset)
-    return await _scoped(user, project, lab)
+    return await _scoped_dataset(user, project, dataset, lab)
 
 
 @app.get("/api/analytics/project-lab")

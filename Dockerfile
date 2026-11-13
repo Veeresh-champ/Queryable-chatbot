@@ -3,11 +3,11 @@
 
 # The OpenUI validator is a Node sidecar (openui_test/scripts/openui-validator.mjs)
 # that needs node and @openuidev/lang-core.
-FROM node:20-bookworm-slim AS openui
+FROM node:22-bookworm-slim AS openui
 WORKDIR /app/openui_test
 RUN npm install --no-save --no-audit --no-fund @openuidev/lang-core@0.3.0
 
-FROM python:3.10-slim-bookworm
+FROM python:3.12-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1

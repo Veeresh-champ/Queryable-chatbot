@@ -1,12 +1,12 @@
 # Next.js frontend (standalone server). Build from openui_test/:
 #   docker build --build-arg BACKEND_URL=http://backend:8000 -t queryable-frontend .
 
-FROM node:20-bookworm-slim AS deps
+FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-FROM node:20-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 # Rewrites are fixed at build time: /api/* is proxied to this URL.
 ARG BACKEND_URL=http://backend:8000
@@ -16,7 +16,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

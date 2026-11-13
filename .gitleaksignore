@@ -1,0 +1,2 @@
+# Known false positive: a dummy password in a test (reviewed in docs/security).
+e8616d32974209e6808648060e73640bb554b976:tests/test_chat_flow.py:generic-api-key:256

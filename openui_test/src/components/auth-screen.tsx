@@ -13,8 +13,26 @@ export type AuthMode = "signin" | "signup";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,31}$/;
 
-const BACKEND_DOWN =
+const BACKEND_DOWN_LOCAL =
   "The FastAPI backend isn't running. Start it with start.ps1 (or: uvicorn backend.main:app --reload) and refresh.";
+const BACKEND_DOWN_HOSTED =
+  "The server is unreachable right now. Please wait a minute and refresh this page.";
+const BACKEND_WAKING =
+  "Waking up the server — this can take up to a minute after a quiet period…";
+
+/* On Render's free plan the backend sleeps when idle and needs ~30–60 s to
+   start again, so a hosted deployment retries before declaring it down. */
+const HEALTH_RETRY_MS = 4_000;
+const HEALTH_MAX_WAIT_MS = 90_000;
+
+function isLocalHost(): boolean {
+  if (typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(window.location.hostname);
+}
+
+function backendDownMessage(): string {
+  return isLocalHost() ? BACKEND_DOWN_LOCAL : BACKEND_DOWN_HOSTED;
+}
 const MONGO_DOWN =
   "MongoDB isn't running, so sign-in can't work yet. Run scripts\\start-mongodb.ps1, then refresh this page.";
 
@@ -151,14 +169,32 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
       })
       .catch(() => {});
 
-    // Say up front which service is down instead of failing on submit.
-    fetch("/api/health")
-      .then(async (response) => {
-        if (!response.ok) throw new Error();
+    // Say up front which service is down instead of failing on submit. A
+    // hosted backend may be cold-starting, so keep retrying for a while.
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const started = Date.now();
+    const checkHealth = async () => {
+      try {
+        const response = await fetch("/api/health", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const health = (await response.json()) as { mongodb?: string };
-        setServiceIssue(health.mongodb === "ok" ? "" : MONGO_DOWN);
-      })
-      .catch(() => setServiceIssue(BACKEND_DOWN));
+        if (!cancelled) setServiceIssue(health.mongodb === "ok" ? "" : MONGO_DOWN);
+      } catch {
+        if (cancelled) return;
+        if (isLocalHost() || Date.now() - started >= HEALTH_MAX_WAIT_MS) {
+          setServiceIssue(backendDownMessage());
+          return;
+        }
+        setServiceIssue(BACKEND_WAKING);
+        timer = setTimeout(checkHealth, HEALTH_RETRY_MS);
+      }
+    };
+    void checkHealth();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const switchMode = (next: AuthMode) => {
@@ -207,7 +243,7 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
         setError(
           await errorMessage(
             response,
-            response.status >= 500 ? BACKEND_DOWN : isSignup ? "Could not create your account." : "Sign-in failed.",
+            response.status >= 500 ? backendDownMessage() : isSignup ? "Could not create your account." : "Sign-in failed.",
           ),
         );
         if (response.status === 503) setServiceIssue("");
@@ -215,7 +251,7 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
       }
       window.location.assign("/");
     } catch {
-      setError(BACKEND_DOWN);
+      setError(backendDownMessage());
     } finally {
       setSubmitting(false);
     }

@@ -9,6 +9,7 @@ import { Download, MessageSquarePlus, Table2 } from "lucide-react";
 
 import { ConcentrationRing, DotMatrix, GlobeView, Honeycomb, PackTree, ProgressRings, RadialTop, RangeCapsules, Wave } from "@/components/viz/studio";
 import { formatValue, type GeoPayload, type ValueFormat } from "@/lib/geo";
+import { csvCell } from "@/lib/csv";
 
 /**
  * Charts for the auto-built dashboards (backend/dashboard.py) and the
@@ -454,7 +455,7 @@ export function chartTable(chart: ChartSpec): { columns: string[]; rows: (string
 
 function download(chart: ChartSpec) {
   const { columns, rows } = chartTable(chart);
-  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const esc = (v: string | number) => csvCell(v);
   const csv = [columns, ...rows].map((r) => r.map(esc).join(",")).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   const a = document.createElement("a");

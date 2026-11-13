@@ -10,6 +10,7 @@ import { CountUp } from "@/components/lab/shared";
 import { VisualAnalysisView, type VisualAnalysis } from "@/components/lab/answer-charts";
 import { WorldMap } from "@/components/world-map";
 import { parseJSON, type GeoPayload, type InsightsPayload } from "@/lib/geo";
+import { csvCell } from "@/lib/csv";
 
 /**
  * Claude-style report artifacts (backend/report_artifact.py).
@@ -73,7 +74,7 @@ function fileName(report: Report, ext: string) {
 }
 
 function toCsv(report: Report) {
-  const esc = (v: unknown) => `"${cell(v).replace(/"/g, '""')}"`;
+  const esc = (v: unknown) => csvCell(typeof v === "number" ? v : cell(v));
   return [report.table.columns.map((c) => esc(c.label)).join(","),
     ...report.table.rows.map((r) => report.table.columns.map((c) => esc(r[c.key])).join(","))].join("\n");
 }

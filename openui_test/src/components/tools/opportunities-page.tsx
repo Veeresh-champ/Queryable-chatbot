@@ -8,6 +8,7 @@ import { LoadState, ToolPage, useApi, useAsk } from "@/components/tools/shared";
 import { Funnel } from "@/components/viz/charts";
 import { authFetch, errorMessage } from "@/lib/api";
 import { projectQuery, useUsableProject } from "@/lib/project";
+import { csvCell } from "@/lib/csv";
 
 /**
  * "What business opportunity is in my data, and what should I do next?"
@@ -95,7 +96,7 @@ function downloadAccounts(accounts: Account[]) {
     a.growth == null ? "unknown" : a.growth ? "yes" : "no", (a.use_cases ?? []).join(" | "),
     a.evidence.map((e) => `${e.label}: ${e.value} (${e.why})`).join(" | "),
   ]);
-  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const esc = (v: string | number) => csvCell(v);
   const url = URL.createObjectURL(new Blob([[header, ...rows].map((r) => r.map(esc).join(",")).join("\n")], { type: "text/csv" }));
   const link = document.createElement("a");
   link.href = url;

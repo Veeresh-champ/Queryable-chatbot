@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { CountUp, fmt, series, shade, Tip, useReveal, type AnyFormat } from "@/components/lab/shared";
+import { csvCell } from "@/lib/csv";
 
 /**
  * Charts for the `visual_analysis` tool result (backend/analytics.py
@@ -515,7 +516,7 @@ function chartRows(chart: AnswerChart): (string | number)[][] {
 }
 
 function downloadCsv(chart: AnswerChart) {
-  const quote = (v: string | number) => (typeof v === "number" ? String(v) : `"${String(v).replace(/"/g, '""')}"`);
+  const quote = (v: string | number) => csvCell(v);
   const csv = chartRows(chart).map((row) => row.map(quote).join(",")).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");

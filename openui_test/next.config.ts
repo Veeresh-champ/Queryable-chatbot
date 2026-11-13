@@ -15,7 +15,9 @@ const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  // No remote images: model-generated image URLs cannot be used to send
+  // answer data to another site. Maps and charts are bundled or inline SVG.
+  "img-src 'self' data: blob:",
   "font-src 'self' data:",
   `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
   "worker-src 'self' blob:",

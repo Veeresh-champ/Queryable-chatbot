@@ -51,17 +51,17 @@ Several of these were already addressed on the local branch `security-fixes-back
 
 ### Summary table
 
-| Security Area | Status | Severity | Findings |
-|---|---|---|---|
-| Authentication | Partly secure | High | F-03 public sign-up; F-10 lockout bypass; F-24 API keys survive password reset; F-25 cookie default; F-26 username timing |
-| Authorization | **Not secure** | **Critical** | F-01 analysts manage projects; F-02 analysts replace/delete datasets; F-05 admin data visible to all; F-07 others' feedback; F-09 self-upgrade plan |
-| API Security | Needs work | High | F-06 restricted schema exposure; F-08 analytics ignore project scope; F-16 no rate limit; F-18 upload memory DoS; F-23 health info; F-28 API docs public |
-| Database Security | Needs work | Medium | F-11 `$expr/$function` passes validator; F-17 single full-privilege DB connection; F-12 PII side channels |
-| Credential Exposure | Mostly secure | Medium | F-22 `.env` in OneDrive-synced folder; I-01 GitHub token shared in chat; Git history clean (1 false positive) |
-| Frontend Security | Needs work | Medium | F-15 no CSP, model links open any URL; F-27 CSV formula injection |
-| LLM Security | Needs work | High | F-04 PII masking bypass; F-13 browser-supplied chat history; F-14 regex-only prompt guard; F-11/F-12 |
-| Dependencies | Needs work | High | F-19 5 high + 4 low npm advisories; Python not scanned (tool not installed) |
-| Deployment Security | Needs work | Medium | F-20 deploys not gated on CI; F-21 end-of-life base images; F-10 trusts any proxy header |
+| Security Area | Status | Findings |
+|---|---|---|
+| Authentication | Fixed | Sign-up off by default, per-account lockout, constant-time login, API keys revoked on password reset |
+| Authorization | Fixed | Projects, datasets and admin data admin-only; verified 20/20 |
+| API Security | Fixed | Project-scoped catalog and dashboards, rate limit, upload limits, health details admin-only, API docs off |
+| Database Security | Fixed | Validator blocks server-side JS and PII filters; optional read-only DB user |
+| Credential Exposure | Owner action | Git history clean; keep `.env` out of OneDrive, rotate keys |
+| Frontend Security | Fixed | CSP, safe links, CSV formula neutralisation |
+| LLM Security | Fixed | PII masking, server-side history, prompt-injection detection, token caps |
+| Dependencies | Fixed (one upstream item) | pymongo, zod, source-map-js updated; `@ag-ui/core` awaiting upstream |
+| Deployment Security | Fixed | Python 3.12 / Node 22, read-only CI permissions, security scans in CI |
 
 ---
 

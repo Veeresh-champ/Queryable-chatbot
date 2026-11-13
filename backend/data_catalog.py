@@ -157,7 +157,16 @@ def _read_csv(content):
         dialect = csv.Sniffer().sniff(text[:20000], delimiters=",;\t|")
     except csv.Error:
         dialect = csv.excel
-    return [row for row in csv.reader(io.StringIO(text), dialect)]
+    # Stream rows and stop early, so an oversized file is rejected without
+    # building millions of rows or columns in memory first.
+    rows = []
+    for row in csv.reader(io.StringIO(text), dialect):
+        if len(row) > MAX_COLUMNS:
+            raise _bad("too_wide", f"Files with up to {MAX_COLUMNS} columns are supported.")
+        rows.append(row)
+        if len(rows) > MAX_ROWS + 50:
+            break
+    return rows
 
 
 def _flatten_record(record, prefix=""):
@@ -246,7 +255,9 @@ def _read_xlsx(content, sheet=None):
                     break
             target = target or book[names[0]]
         rows = []
-        for row in target.iter_rows(values_only=True):
+        # Bound the read: a workbook can declare a huge sheet size (A1:XFD1048576)
+        # that openpyxl would otherwise pad every row out to.
+        for row in target.iter_rows(max_row=MAX_ROWS + 51, max_col=MAX_COLUMNS + 1, values_only=True):
             rows.append([_cell_text(value) for value in row])
             if len(rows) > MAX_ROWS + 50:
                 break

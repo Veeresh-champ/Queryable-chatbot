@@ -34,6 +34,7 @@ from backend.auth import (
     create_user,
     hash_password,
     require_session_user,
+    revoke_api_keys,
     sessions,
     users,
 )
@@ -366,8 +367,9 @@ def reset_password(username: str, payload: PasswordReset, admin=Depends(require_
     _target(username)
     users.update_one({"username": username}, {"$set": {"password_hash": hash_password(payload.new_password)}})
     revoked = sessions.delete_many({"username": username}).deleted_count
-    _audit(admin, "user.password_reset", username, {"sessions_revoked": revoked})
-    return {"ok": True, "sessions_revoked": revoked}
+    keys = revoke_api_keys(username)
+    _audit(admin, "user.password_reset", username, {"sessions_revoked": revoked, "api_keys_revoked": keys})
+    return {"ok": True, "sessions_revoked": revoked, "api_keys_revoked": keys}
 
 
 @router.post("/users/{username}/sessions/revoke")

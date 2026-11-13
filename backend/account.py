@@ -32,6 +32,8 @@ from backend.auth import (
     _token_hash,
     api_keys,
     hash_password,
+    record_event,
+    revoke_api_keys,
     require_session_user,
     sessions,
     users,
@@ -275,6 +277,7 @@ def create_key(payload: NewKey, user=Depends(require_session_user)):
         "revoked_at": None,
     }
     api_keys.insert_one(doc)
+    record_event("api_key.create", user["username"], details={"prefix": doc["prefix"], "suffix": doc["suffix"]})
     # The only time the full key is ever returned.
     return {"key": secret, **_public_key(doc)}
 
@@ -287,6 +290,7 @@ def revoke_key(key_id: str, user=Depends(require_session_user)):
     )
     if not result.matched_count:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "API key not found."})
+    record_event("api_key.revoke", user["username"], details={"key_id": key_id})
     return {"ok": True}
 
 
@@ -325,8 +329,11 @@ def change_password(payload: PasswordChange, request: Request, user=Depends(requ
         {"username": user["username"]},
         {"$set": {"password_hash": hash_password(payload.new_password)}},
     )
-    # Every other device has to sign in again with the new password.
+    # Every other device has to sign in again with the new password, and API
+    # keys created under the old password stop working.
     sessions.delete_many({"username": user["username"], "token_hash": {"$ne": _current_token_hash(request)}})
+    keys = revoke_api_keys(user["username"])
+    record_event("password.change", user["username"], request, {"api_keys_revoked": keys})
     return {"ok": True}
 
 

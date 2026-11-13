@@ -105,7 +105,7 @@ class Settings:
     login_lockout_seconds: int = _int("LOGIN_LOCKOUT_SECONDS", 300)
     # Failed logins for one username from ANY address before it is locked
     # (stops password guessing that rotates IP addresses).
-    login_max_attempts_per_account: int = _int("LOGIN_MAX_ATTEMPTS_PER_ACCOUNT", 20)
+    login_max_attempts_per_account: int = _int("LOGIN_MAX_ATTEMPTS_PER_ACCOUNT", 10)
     # Self-service sign-up from the login page. Off by default: accounts are
     # issued by an administrator (Admin console or scripts/create_user.py).
     allow_signup: bool = _bool("ALLOW_SIGNUP", False)

@@ -227,7 +227,7 @@ All settings live in `.env` and are documented in [`.env.example`](.env.example)
 | `ALLOW_SIGNUP` | `false` | Show self-service sign-up (keep off on shared deployments) |
 | `SELF_SERVICE_PLANS` | `false` | Let users pick their own plan (demo only; otherwise admins assign plans) |
 | `CHAT_REQUESTS_PER_MINUTE` | `20` | Chat / ask requests per user per minute (`0` = no limit) |
-| `LOGIN_MAX_ATTEMPTS_PER_ACCOUNT` | `20` | Failed logins for one username from any address before it is locked |
+| `LOGIN_MAX_ATTEMPTS_PER_ACCOUNT` | `10` | Failed logins for one username from any address before it is locked |
 | `MONGODB_READONLY_URI` | — | Read-only MongoDB user for model-generated queries and schema sampling |
 | `GRAPHITI_ENABLED` | `false` | Add Graphiti/Neo4j context (needs Neo4j + `pip install graphiti-core neo4j`) |
 | `LANGFUSE_*` | — | Optional tracing |

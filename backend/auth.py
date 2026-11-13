@@ -31,6 +31,9 @@ PBKDF2_ITERATIONS = 310_000
 users = db["app_users"]
 sessions = db["app_sessions"]
 api_keys = db["app_api_keys"]
+# Sign-ins, failed sign-ins, lockouts, sign-ups and API-key changes (kept 90 days).
+security_log = db["security_log"]
+SECURITY_LOG_DAYS = 90
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -42,6 +45,31 @@ def ensure_indexes():
     sessions.create_index("expires_at", expireAfterSeconds=0)
     api_keys.create_index("key_hash", unique=True)
     api_keys.create_index([("username", 1), ("created_at", -1)])
+    security_log.create_index("at", expireAfterSeconds=SECURITY_LOG_DAYS * 86400)
+    security_log.create_index([("username", 1), ("at", -1)])
+
+
+def record_event(action, username, request=None, details=None):
+    """Write a security event. Never stores passwords, tokens or keys."""
+
+    try:
+        security_log.insert_one({
+            "at": datetime.now(timezone.utc),
+            "action": action,
+            "username": username,
+            "ip": request.client.host if request is not None and request.client else None,
+            "details": details or {},
+        })
+    except Exception:  # noqa: BLE001 - logging must never break sign-in
+        pass
+
+
+def revoke_api_keys(username):
+    """Revoke every active API key of a user (after a password change or reset)."""
+
+    result = api_keys.update_many({"username": username, "revoked_at": None},
+                                  {"$set": {"revoked_at": datetime.now(timezone.utc)}})
+    return result.modified_count
 
 
 # --------------------------------------------------
@@ -52,6 +80,16 @@ def hash_password(password, salt=None):
     salt = salt or secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS)
     return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+
+_DUMMY_HASH = None
+
+
+def _dummy_hash():
+    global _DUMMY_HASH
+    if _DUMMY_HASH is None:
+        _DUMMY_HASH = hash_password(secrets.token_urlsafe(16))
+    return _DUMMY_HASH
 
 
 def verify_password(password, stored):
@@ -285,6 +323,7 @@ def login(payload: LoginRequest, request: Request, response: Response):
 
     locked = max(_locked_for(key), _locked_for(account_key))
     if locked:
+        record_event("login.locked", username, request)
         raise HTTPException(
             status_code=429,
             detail={
@@ -295,7 +334,11 @@ def login(payload: LoginRequest, request: Request, response: Response):
 
     user = users.find_one({"username": username, "disabled": {"$ne": True}})
 
-    if not user or not verify_password(payload.password, user.get("password_hash", "")):
+    # Unknown usernames still pay for one password hash, so response time does
+    # not reveal which usernames exist.
+    stored = user.get("password_hash", "") if user else _dummy_hash()
+    if not verify_password(payload.password, stored) or not user:
+        record_event("login.failed", username, request)
         _register_failure(key)
         _register_failure(account_key, settings.login_max_attempts_per_account)
         raise HTTPException(
@@ -307,6 +350,7 @@ def login(payload: LoginRequest, request: Request, response: Response):
     _clear_failures(account_key)
     token = create_session(user)
     _set_cookie(response, token)
+    record_event("login.success", username, request)
 
     return {
         "user": {
@@ -386,6 +430,7 @@ def signup(payload: SignupRequest, request: Request, response: Response):
 
     user = users.find_one({"username": username})
     _set_cookie(response, create_session(user))
+    record_event("signup", username, request)
 
     return {
         "user": {

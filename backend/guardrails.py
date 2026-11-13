@@ -20,10 +20,13 @@ INJECTION_PATTERNS = [
     r"(reveal|print|show|repeat) (me )?(your|the) (system|hidden) prompt",
     r"you are now (in )?(developer|dan|jailbreak) mode",
     r"\b(api[_ ]?key|secret[_ ]?key|password hash|connection string)\b",
+    # Paraphrases: "set aside / forget / override earlier guidance", "output the hidden instructions"
+    r"\b(ignore|disregard|forget|set aside|override|bypass|skip)\b.{0,30}\b(earlier|previous|prior|above|original|system|your)\b.{0,20}\b(instructions?|guidance|rules|prompts?|directives?)\b",
+    r"\b(output|reveal|print|show|repeat|leak|dump)\b.{0,30}\b(hidden|system|internal|secret|initial)\b.{0,15}\b(instructions?|prompts?|rules)\b",
 ]
 
 DESTRUCTIVE_PATTERNS = [
-    r"\b(drop|truncate)\s+(the\s+)?(database|collection|table)s?\b",
+    r"\b(drop|truncate)\b.{0,40}\b(database|collection|table)s?\b",
     r"\b(delete|remove|wipe|erase)\s+(all\s+)?(the\s+)?(records|documents|rows|data|collection)\b",
     r"\b(update|modify|insert|overwrite)\s+(the\s+)?(records|documents|rows|database|collection)\b",
     r"\$where|\$function|\$out\b|\$merge\b|db\.\w+\.(drop|remove|delete|update|insert)",
@@ -82,15 +85,18 @@ def check_question(question):
 # --------------------------------------------------
 
 PII_FIELD_PATTERN = re.compile(
-    r"(e[-_]?mail|phone|mobile|contact_number|address|street|zip|postal|"
+    r"(e[-_\s]?mail|phone|mobile|contact[-_\s]?(number|no|person|name)|address|street|zip|postal|"
     r"password|passwd|ssn|social_security|national_id|passport|"
-    r"credit_card|card_number|iban|account_number|dob|date_of_birth|birth_date)",
+    r"credit_card|card_number|iban|account_number|dob|date_of_birth|birth_date|birthday|"
+    r"(^|[-_\s])(tel|telephone|cell[-_\s]?(no|number|phone)?|mob[-_\s]?no|whatsapp|fax)($|[-_\s])|"
+    r"(^|[-_\s])mail([-_\s]?id)?($|[-_\s])|linkedin|"
+    r"(first|last|middle|full|given|family|person|employee|customer)[-_\s]?name|surname)",
     re.IGNORECASE,
 )
 
 # Yes/no columns about a PII-sounding topic ("credit_card_accepted",
 # "mobile_app_yes_no") hold no personal data.
-NOT_PII_SUFFIX = re.compile(r"(_yes_no|_accepted|_flag|_enabled|_available|_provided|_verified)$", re.IGNORECASE)
+NOT_PII_SUFFIX = re.compile(r"(_yes_no|_accepted|_flag|_enabled|_available)$", re.IGNORECASE)
 
 
 def is_pii_field(name):
@@ -104,10 +110,15 @@ def is_pii_field(name):
 
 EMAIL_VALUE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_VALUE = re.compile(r"(?<!\d)(\+?\d[\d\s().-]{8,}\d)(?!\d)")
+# Phone numbers inside free text or unnamed fields: international (+...) or
+# (555) 123-4567 style. Plain digit runs and ISO dates are left alone.
+PHONE_IN_TEXT = re.compile(r"(?<![\w+])(\+\d[\d\s().-]{7,}\d|\(\d{3}\)\s?\d{3}[-\s]\d{4})(?!\w)")
 
 
 def _mask(value):
     text = str(value)
+    if "***" in text:  # already masked
+        return text
     if EMAIL_VALUE.fullmatch(text):
         name, _, domain = text.partition("@")
         return f"{name[:1]}***@{domain}"
@@ -128,12 +139,13 @@ def _redact_value(key, value):
 
     if isinstance(value, str):
         value = EMAIL_VALUE.sub(lambda m: _mask(m.group(0)), value)
+        value = PHONE_IN_TEXT.sub(lambda m: _mask(m.group(0)), value)
 
     return value
 
 
 def redact_pii(records):
-    """Mask personal data in MongoDB results (field names and e-mail values)."""
+    """Mask personal data in MongoDB results (by field name, and e-mail/phone values)."""
 
     if not settings.redact_pii:
         return records

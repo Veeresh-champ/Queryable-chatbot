@@ -73,6 +73,40 @@ def references_pii(value):
     return False
 
 
+# Never allowed anywhere in a generated query, including inside $expr:
+# server-side JavaScript and write stages.
+FORBIDDEN_ANYWHERE = {"$function", "$accumulator", "$where", "$out", "$merge"}
+JOIN_KEY_FIELDS = {"localField", "foreignField", "connectFromField", "connectToField"}
+
+
+def unsafe_anywhere(value):
+    """True when a filter or pipeline uses forbidden operators or touches PII.
+
+    Generated queries may not filter, sort, group, join or project on a
+    personal-data field: besides copying values out, filtering lets a caller
+    recover them one character at a time (e.g. counting ``email ^a``).
+    """
+
+    if isinstance(value, list):
+        return any(unsafe_anywhere(item) for item in value)
+    if isinstance(value, str):
+        return references_pii(value)
+    if not isinstance(value, dict):
+        return False
+    for key, item in value.items():
+        if not isinstance(key, str):
+            return True
+        if key in FORBIDDEN_ANYWHERE:
+            return True
+        if not key.startswith("$") and is_pii_field(key):
+            return True
+        if key in JOIN_KEY_FIELDS and isinstance(item, str) and is_pii_field(item):
+            return True
+        if unsafe_anywhere(item):
+            return True
+    return False
+
+
 def safe_regex(pattern):
     return isinstance(pattern, str) and len(pattern) <= MAX_REGEX_CHARS and not NESTED_QUANTIFIER.search(pattern)
 
@@ -447,6 +481,9 @@ def validate_query(query):
     fields = query.get("fields", [])
 
     if not validate_filters(collection, filters):
+        return False
+
+    if unsafe_anywhere(filters) or unsafe_anywhere(query.get("pipeline", [])):
         return False
 
     if not all(safe_regex(pattern) for pattern in _regexes(filters)):

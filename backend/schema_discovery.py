@@ -4,6 +4,7 @@ import threading
 import time
 
 from backend.db import business_collection_names, read_db as db
+from backend.guardrails import redact_pii
 
 SAMPLE_LIMIT = 1000
 
@@ -75,7 +76,9 @@ def _discover_schema():
                     len(sample_values) < 3
                     and value_text not in [str(item) for item in sample_values]
                 ):
-                    sample_values.append(value)
+                    # Samples go into the LLM prompt and the catalog: mask
+                    # personal data before they leave the database layer.
+                    sample_values.append(redact_pii({field: value})[field])
 
         if fields:
             schema[collection_name] = fields

@@ -1,0 +1,18 @@
+[
+  {
+    "RuleID": "generic-api-key",
+    "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+    "StartLine": 256,
+    "EndLine": 256,
+    "StartColumn": 71,
+    "EndColumn": 98,
+    "File": "tests/test_chat_flow.py",
+    "SymlinkFile": "",
+    "Commit": "e8616d32974209e6808648060e73640bb554b976",
+    "Link": "https://github.com/Veeresh-champ/Queryable-chatbot/blob/e8616d32974209e6808648060e73640bb554b976/tests/test_chat_flow.py#L256",
+    "Entropy": 3.5068905,
+    "Date": "2026-10-28T09:19:12Z",
+    "Tags": [],
+    "Note": "False positive: dummy password in a test file; secret value redacted"
+  }
+]

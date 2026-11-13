@@ -1,0 +1,250 @@
+[
+  {
+    "id": "AZ-01",
+    "test": "analyst POST /api/admin/users (create user)",
+    "status": 403,
+    "expected_secure": [
+      403
+    ],
+    "result": "PASS (secure)",
+    "detail": null
+  },
+  {
+    "id": "AZ-02",
+    "test": "analyst PATCH /api/admin/users/audit_analyst role=admin",
+    "status": 403,
+    "expected_secure": [
+      403
+    ],
+    "result": "PASS (secure)",
+    "detail": null
+  },
+  {
+    "id": "AZ-03",
+    "test": "anonymous GET /api/admin/users",
+    "status": 401,
+    "expected_secure": [
+      401,
+      403
+    ],
+    "result": "PASS (secure)",
+    "detail": null
+  },
+  {
+    "id": "AZ-04",
+    "test": "analyst GET /api/admin/users (user list)",
+    "status": 200,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "users_returned": 2
+    }
+  },
+  {
+    "id": "AZ-05",
+    "test": "analyst GET /api/admin/audit (admin audit log)",
+    "status": 200,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-06",
+    "test": "analyst GET /api/admin/overview",
+    "status": 200,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-07",
+    "test": "analyst GET /api/catalog shows restricted dataset schema",
+    "status": 200,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "restricted_dataset_listed": true
+    }
+  },
+  {
+    "id": "AZ-08",
+    "test": "analyst PATCH restricted project: add self to members",
+    "status": 200,
+    "expected_secure": [
+      403,
+      404
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "analyst_can_read_restricted_after": true
+    }
+  },
+  {
+    "id": "AZ-09",
+    "test": "analyst PATCH restricted project: access=everyone",
+    "status": 200,
+    "expected_secure": [
+      403,
+      404
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-10",
+    "test": "analyst PATCH project enabled=false (switch off for everyone)",
+    "status": 200,
+    "expected_secure": [
+      403,
+      404
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-11",
+    "test": "analyst POST /api/projects (create project)",
+    "status": 201,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-12",
+    "test": "analyst upload mode=replace over admin's restricted dataset",
+    "status": 201,
+    "expected_secure": [
+      403,
+      404
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "data_replaced": true
+    }
+  },
+  {
+    "id": "AZ-13",
+    "test": "analyst DELETE /api/catalog/audit_secret",
+    "status": 200,
+    "expected_secure": [
+      403,
+      404
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "collection_still_exists": false
+    }
+  },
+  {
+    "id": "AZ-14",
+    "test": "analyst GET /api/feedback/summary (all users' feedback)",
+    "status": 200,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-15",
+    "test": "analyst POST /api/account/plan team (unlimited)",
+    "status": 200,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-16",
+    "test": "anonymous GET /api/health returns only status+mongodb",
+    "status": 299,
+    "expected_secure": [
+      200
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "keys": [
+        "graphiti_enabled",
+        "jev_enabled",
+        "langfuse_enabled",
+        "mongodb",
+        "openrouter_configured",
+        "openui_assets",
+        "openui_provider",
+        "openui_validator",
+        "status",
+        "thesys_configured"
+      ]
+    }
+  },
+  {
+    "id": "AZ-17",
+    "test": "anonymous POST /api/auth/signup (public signup)",
+    "status": 201,
+    "expected_secure": [
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  },
+  {
+    "id": "AZ-18",
+    "test": "anonymous GET /api/threads",
+    "status": 401,
+    "expected_secure": [
+      401,
+      403,
+      404,
+      405
+    ],
+    "result": "PASS (secure)",
+    "detail": null
+  },
+  {
+    "id": "AZ-19",
+    "test": "12 wrong passwords, rotating spoofed X-Forwarded-For -> lockout (429)?",
+    "status": 401,
+    "expected_secure": [
+      429
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": {
+      "codes": [
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401,
+        401
+      ]
+    }
+  },
+  {
+    "id": "AZ-20",
+    "test": "API key still works after admin password reset",
+    "status": 200,
+    "expected_secure": [
+      401,
+      403
+    ],
+    "result": "FAIL (vulnerable)",
+    "detail": null
+  }
+]

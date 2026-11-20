@@ -22,6 +22,7 @@ import {
 import { LoadState, ToolPage, useApi } from "@/components/tools/shared";
 import { authFetch, errorMessage, logout, type SessionUser } from "@/lib/api";
 import { formatValue } from "@/lib/geo";
+import { BRAND } from "@/lib/brand";
 
 type Plan = {
   id: string;
@@ -119,7 +120,8 @@ function GeneralTab({
   ];
   return (
     <section className="qc-set-card">
-      <Row title="Appearance" hint="Applies to this browser.">
+      {/* Brand editions are light only. */}
+      {!BRAND.id && <Row title="Appearance" hint="Applies to this browser.">
         <div className="qc-segmented" role="radiogroup" aria-label="Appearance">
           {choices.map((choice) => (
             <button
@@ -134,7 +136,7 @@ function GeneralTab({
             </button>
           ))}
         </div>
-      </Row>
+      </Row>}
       <Row title="Default model" hint="Used for new answers. You can still switch per conversation.">
         <select className="qc-select" value={model} onChange={(event) => onModel(event.target.value)} disabled={!models.length}>
           {models.map((option) => (
@@ -425,7 +427,7 @@ function KeysTab({ data, onChanged }: { data: Overview; onChanged: () => void })
     <>
       <section className="qc-set-card">
         <p className="qc-set-lede">
-          Use a secret key to call the Queryable API from scripts and notebooks. Keys act as you, can read your
+          Use a secret key to call the {BRAND.id ? `${BRAND.name} data` : "Queryable"} API from scripts and notebooks. Keys act as you, can read your
           data and count toward your plan, but cannot change your account. Keep them out of shared code.
         </p>
         <form className="qc-set-inline" onSubmit={create}>

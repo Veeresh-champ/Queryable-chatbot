@@ -1,0 +1,774 @@
+/* =========================================================================
+   BRAND EDITIONS (NEXT_PUBLIC_BRAND=lake|span, set as html[data-brand])
+   Direction: each edition is a light product extension of its website, not
+   a reskin of the dark demo.
+   - Grounds: lake white #FFFFFF with #F5F7F9 rails; span #F5F7F9 with white
+     surfaces. No aurora, no glass, no glow: surfaces are solid.
+   - Colour: one accent per brand on controls, focus and links (lake purple
+     #6D08BE, span green #1B6B3A to #2D9B55). Purple and green are accents,
+     never grounds, except the login showcase, which uses each brand's dark
+     hero (lake navy #011A6B, span navy #0F2B3C to #1A3A4A) with explicit
+     light ink on every child.
+   - Type: lake Montserrat throughout, IBM Plex Mono for data labels; span
+     Montserrat headings, Inter body, Space Mono labels.
+   - Shape: both sites use near-square controls, so radii drop to 4px on
+     controls and 8px on cards.
+   Neutral build: no data-brand attribute, so nothing below applies.
+   ========================================================================= */
+
+html[data-brand="lake"] {
+  --b-ground: #ffffff;
+  --b-rail: #f5f7f9;
+  --b-ink: #011a6b;
+  --b-ink-2: #36457f;
+  --b-ink-3: #525e8c;
+  --b-line: #e3e7f0;
+  --b-line-strong: #c9d0e2;
+  --b-accent: #6d08be;
+  --b-accent-hover: #5a06a0;
+  --b-accent-2: #6d08be;
+  --b-accent-soft: rgba(109, 8, 190, 0.08);
+  --b-danger: #c1003c;
+  --b-success: #007a83;
+  --b-hero: #011a6b;
+  --b-hero-accent: #dd1286;
+}
+
+html[data-brand="span"] {
+  --b-ground: #f5f7f9;
+  --b-rail: #ffffff;
+  --b-ink: #1e2a32;
+  --b-ink-2: #4d6070;
+  --b-ink-3: #56697a;
+  --b-line: #d9e3e9;
+  --b-line-strong: #b8cacf;
+  --b-accent: #1b6b3a;
+  --b-accent-hover: #155a30;
+  --b-accent-2: #2d9b55;
+  --b-accent-soft: #e8f5ee;
+  --b-danger: #b8233b;
+  --b-success: #1b6b3a;
+  /* Solid navy under the gradient so contrast is measurable on one ground. */
+  --b-hero: #0f2b3c linear-gradient(160deg, #0f2b3c, #1a3a4a);
+  --b-hero-accent: #3dbe6e;
+}
+
+/* Font vars live on body: next/font defines --font-brand-* there, and a var()
+   declared on html would resolve before they exist and fall back to Times. */
+html[data-brand="lake"] body {
+  --b-head: var(--font-brand-head), Arial, sans-serif;
+  --b-body: var(--font-brand-head), Arial, sans-serif;
+  --b-mono: var(--font-brand-mono-lake), ui-monospace, monospace;
+}
+
+html[data-brand="span"] body {
+  --b-head: var(--font-brand-head), Arial, sans-serif;
+  --b-body: var(--font-brand-body), Arial, sans-serif;
+  --b-mono: var(--font-brand-mono-span), ui-monospace, monospace;
+}
+
+html[data-brand],
+html[data-brand] body {
+  background: var(--b-ground);
+  color: var(--b-ink);
+}
+
+/* next/font sets --font-sans/--font-display on body; this selector outranks it. */
+html[data-brand] body {
+  --font-sans: var(--b-body);
+  --font-display: var(--b-head);
+  font-family: var(--b-body);
+}
+
+html[data-brand] .qc-backdrop {
+  display: none;
+}
+
+/* ---- Tokens: every --qc-* and --lab-* the shell and OpenUI chrome read. ---- */
+html[data-brand] .qc-app {
+  --qc-bg: var(--b-ground);
+  --qc-panel: #ffffff;
+  --qc-panel-solid: #ffffff;
+  --qc-panel-raised: var(--b-rail);
+  --qc-glass-blur: none;
+  --qc-ink: var(--b-ink);
+  --qc-ink-2: var(--b-ink-2);
+  --qc-ink-3: var(--b-ink-3);
+  --qc-line: var(--b-line);
+  --qc-line-strong: var(--b-line-strong);
+  --qc-accent: var(--b-accent);
+  --qc-accent-hover: var(--b-accent-hover);
+  --qc-accent-2: var(--b-accent-2);
+  --qc-on-accent: #ffffff;
+  --qc-accent-soft: var(--b-accent-soft);
+  --qc-focus: var(--b-accent);
+  --qc-danger: var(--b-danger);
+  --qc-success: var(--b-success);
+  --qc-field: #ffffff;
+  --qc-shadow: 0 1px 2px rgba(15, 30, 60, 0.06), 0 6px 20px rgba(15, 30, 60, 0.05);
+  --qc-edge: 0 0 0 0 transparent;
+  --qc-aurora-a: transparent;
+  --qc-aurora-b: transparent;
+  --qc-aurora-c: transparent;
+  --qc-grid-line: transparent;
+  --qc-vignette: transparent;
+  --lab-glow: transparent;
+  --lab-ink-on: #ffffff;
+  --lab-surface: #ffffff;
+  --lab-surface-2: var(--b-rail);
+  --lab-line: var(--b-line);
+  --lab-line-strong: var(--b-line-strong);
+  --lab-down: var(--b-danger);
+  --scroll-thumb: rgba(15, 30, 60, 0.18);
+  --qc-map-ocean: var(--b-accent-soft);
+  --qc-map-land: #e6eaf1;
+  --qc-map-border: #ffffff;
+  --qc-map-graticule: var(--b-line);
+  --qc-map-halo: #ffffff;
+  --qc-globe-atmosphere: var(--b-accent);
+  background: var(--b-ground);
+  color: var(--b-ink);
+}
+
+html[data-brand="lake"] .qc-app {
+  --qc-series-1: #6d08be;
+  --qc-series-2: #dd1286;
+  --qc-series-3: #0095a0;
+  --qc-series-4: #7a76da;
+  --qc-series-5: #ff6903;
+  --qc-series-6: #011a6b;
+  --qc-series-7: #c1003c;
+  --qc-series-8: #ffb703;
+  --lab-lo: #efe6f9;
+  --lab-mid: #7a76da;
+  --lab-hi: #6d08be;
+}
+
+html[data-brand="span"] .qc-app {
+  --qc-series-1: #1b6b3a;
+  --qc-series-2: #3dbe6e;
+  --qc-series-3: #00d4aa;
+  --qc-series-4: #0f2b3c;
+  --qc-series-5: #f5a623;
+  --qc-series-6: #2d9b55;
+  --qc-series-7: #1a3a4a;
+  --qc-series-8: #4d6070;
+  --lab-lo: #e8f5ee;
+  --lab-mid: #3dbe6e;
+  --lab-hi: #1b6b3a;
+}
+
+/* ---- Shell ---- */
+html[data-brand] .qc-app .openui-agent-sidebar-container {
+  background: var(--b-rail);
+  box-shadow: none;
+}
+
+html[data-brand] .qc-app .openui-agent-new-chat-button,
+html[data-brand] .qc-app .openui-agent-desktop-welcome-composer__submit-button,
+html[data-brand] .qc-app .openui-agent-thread-composer__submit-button,
+html[data-brand] .auth-submit {
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+html[data-brand] .auth-submit:not(:disabled) {
+  color: #ffffff;
+}
+
+/* Solid accent, not the neutral two-stop gradient: white on span's light green
+   end (#2D9B55) is only about 3.4:1. */
+html[data-brand] .qc-app .openui-agent-new-chat-button,
+html[data-brand] .qc-app .openui-agent-desktop-welcome-composer__submit-button,
+html[data-brand] .qc-app .openui-agent-thread-composer__submit-button,
+html[data-brand] .auth-submit:not(:disabled),
+html[data-brand] .qc-app .qc-side-badge {
+  background: var(--b-accent);
+}
+
+html[data-brand] .qc-app .qc-side-badge {
+  color: #ffffff;
+}
+
+html[data-brand] .qc-app .openui-agent-new-chat-button:hover,
+html[data-brand] .auth-submit:hover:not(:disabled) {
+  background: var(--b-accent-hover);
+  filter: none;
+}
+
+/* Composer: a plain field with an accent ring on focus, no orbiting light. */
+html[data-brand] .qc-app .openui-agent-desktop-welcome-composer::before,
+html[data-brand] .qc-app .openui-agent-thread-composer__input-wrapper::before {
+  display: none;
+}
+
+html[data-brand] .qc-app .openui-agent-desktop-welcome-composer,
+html[data-brand] .qc-app .openui-agent-thread-composer__input-wrapper {
+  border-radius: 8px;
+}
+
+html[data-brand] .qc-app .openui-agent-desktop-welcome-composer:focus-within,
+html[data-brand] .qc-app .openui-agent-thread-composer__input-wrapper:focus-within {
+  border-color: var(--b-accent);
+  box-shadow: 0 0 0 3px var(--b-accent-soft);
+}
+
+html[data-brand] .qc-app .openui-agent-conversation-starter-item-short {
+  border-radius: 4px;
+}
+
+html[data-brand] .qc-app .openui-card-sunk {
+  border-radius: 8px;
+}
+
+/* Headings: the brand's display face, set the way each site sets its h2. */
+html[data-brand] .qc-app .openui-agent-welcome-screen__title {
+  font-family: var(--b-head);
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+html[data-brand] .qc-app .openui-agent-welcome-screen__description {
+  font-size: 16px;
+}
+
+html[data-brand] .qc-app :is(code, kbd, pre),
+html[data-brand] .qc-app [class*="openui-"] :is(code, pre) {
+  font-family: var(--b-mono);
+}
+
+html[data-brand] .qc-app .qc-primary-button {
+  border-radius: 4px;
+  background: var(--b-accent);
+  color: #ffffff;
+}
+
+/* Phone header: the product name is longer than the neutral one, so the model
+   switcher keeps its icon and chevron and drops its label. */
+html[data-brand] .qc-app .openui-agent-mobile-header .openui-model-switcher-name {
+  display: none;
+}
+
+html[data-brand] .qc-app .openui-agent-thread-composer::after {
+  content: var(--b-disclaimer);
+}
+
+/* The band is an inline-size container with no intrinsic width, so its slot in
+   the welcome header must stretch or a % width collapses it to 0. */
+html[data-brand] .qc-app .openui-agent-welcome-screen__image-container:has(.qc-stats) {
+  align-self: stretch;
+  justify-content: center;
+}
+
+/* ---- Stats band (21st.dev kuratlielia/stats-band) on the empty chat home ---- */
+html[data-brand] .qc-stats {
+  --background: #ffffff;
+  --foreground: var(--b-ink);
+  --accent: var(--b-accent);
+  --border: var(--b-line);
+  --border-strong: var(--b-line-strong);
+  --text-secondary: var(--b-ink-2);
+  --text-muted: var(--b-ink-3);
+  --font-display: var(--b-head);
+  --font-body: var(--b-body);
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 0.5rem;
+  --space-6: 1.5rem;
+  --space-8: 1.5rem;
+  --space-10: 1.25rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-4xl: 2.5rem;
+  --tracking-display: -0.02em;
+  --tracking-body: 0;
+  --leading-display: 1.1;
+  --leading-body: 1.4;
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-standard: 240ms;
+  --duration-spring: 580ms;
+  width: min(720px, 100%);
+  margin: 0 auto 8px;
+  border: 1px solid var(--b-line);
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: left;
+}
+
+/* The band's own section padding is sized for a landing page; here it sits in a card. */
+html[data-brand] .qc-stats section > div {
+  padding: 0 24px;
+}
+
+html[data-brand] .qc-stats dd > span[aria-hidden="true"] {
+  color: var(--b-accent);
+  font-size: clamp(1.75rem, 1rem + 2cqi, 2.25rem);
+  font-weight: 800;
+}
+
+html[data-brand] .qc-stats dt {
+  font-family: var(--b-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Phones: keep the two figures side by side so the heading stays near the fold. */
+@container stats (max-width: 520px) {
+  html[data-brand] .qc-stats dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-brand] .qc-stats dl > div {
+    display: block;
+    padding: 16px 0 16px 16px;
+  }
+
+  html[data-brand] .qc-stats dl > div:first-child {
+    padding-left: 0;
+  }
+}
+
+html[data-brand] .qc-stats--empty {
+  padding: 16px 20px;
+  color: var(--b-ink-2);
+  font-size: 14px;
+}
+
+/* ---- Sign-in ---- */
+html[data-brand] .auth-brand img {
+  width: auto;
+  height: 40px;
+  border-radius: 0;
+}
+
+html[data-brand="lake"] .auth-brand img {
+  /* Brand floor: never narrower than 180px. */
+  min-width: 180px;
+  height: auto;
+}
+
+html[data-brand] .auth-brand__product {
+  padding-left: 12px;
+  border-left: 1px solid var(--b-line-strong);
+  color: var(--b-ink-2);
+  font-family: var(--b-head);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-brand] .auth-body {
+  border-radius: 8px;
+  border-color: var(--b-line);
+  background: #ffffff;
+}
+
+html[data-brand] .auth-title,
+html[data-brand] .auth-showcase__headline {
+  font-family: var(--b-head);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+html[data-brand] .auth-title {
+  font-size: clamp(28px, 4vw, 36px);
+}
+
+html[data-brand] .auth-input {
+  border-radius: 4px;
+}
+
+html[data-brand] .auth-tabs {
+  border-radius: 6px;
+}
+
+html[data-brand] .auth-tab {
+  border-radius: 4px;
+}
+
+@media (min-width: 960px) {
+  html[data-brand] .auth-showcase {
+    border: 0;
+    border-radius: 8px;
+    background: var(--b-hero);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: #ffffff;
+  }
+}
+
+/* Bars on the dark hero need hues that hold against navy. */
+html[data-brand="lake"] .auth-showcase {
+  --qc-series-1: #ffb703;
+  --qc-series-2: #dd1286;
+  --qc-series-3: #0095a0;
+}
+
+html[data-brand="span"] .auth-showcase {
+  --qc-series-1: #3dbe6e;
+  --qc-series-2: #00d4aa;
+  --qc-series-3: #f5a623;
+  --qc-series-4: #2d9b55;
+}
+
+html[data-brand] .auth-showcase__logo {
+  width: 180px;
+  height: auto;
+  margin-bottom: 28px;
+}
+
+html[data-brand] .auth-showcase :is(.auth-showcase__eyebrow, .auth-demo__label, .auth-demo__unit, .auth-demo__foot code) {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+html[data-brand] .auth-showcase__eyebrow {
+  font-family: var(--b-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+html[data-brand] .auth-showcase__headline,
+html[data-brand] .auth-demo__head,
+html[data-brand] .auth-demo__value,
+html[data-brand] .auth-demo__question {
+  color: #ffffff;
+}
+
+html[data-brand] .auth-showcase__headline em {
+  color: #ffffff;
+  font-style: normal;
+  box-shadow: inset 0 -0.14em 0 var(--b-hero-accent);
+}
+
+html[data-brand="span"] .auth-showcase__headline em {
+  color: var(--b-hero-accent);
+  box-shadow: none;
+}
+
+html[data-brand] .auth-demo__question {
+  border-radius: 8px 8px 2px 8px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html[data-brand] .auth-demo__card {
+  border-color: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: none;
+}
+
+html[data-brand] .auth-demo__bars li {
+  grid-template-columns: 104px 1fr auto;
+}
+
+html[data-brand] .auth-demo__value {
+  min-width: 36px;
+}
+
+html[data-brand] .auth-demo__track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-brand] .auth-demo__track,
+html[data-brand] .auth-demo__bar {
+  border-radius: 2px;
+}
+
+html[data-brand] .auth-demo__foot {
+  border-top-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+html[data-brand] .auth-points li {
+  border-color: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+/* ---- /embed-preview: the website launcher (21st.dev anubra266/floating-panel) ---- */
+.qc-embed {
+  min-height: 100dvh;
+  background: var(--b-ground);
+  color: var(--b-ink);
+}
+
+.qc-embed__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--b-line);
+  background: #ffffff;
+}
+
+.qc-embed__bar img {
+  width: auto;
+  height: 40px;
+}
+
+html[data-brand="lake"] .qc-embed__bar img {
+  min-width: 180px;
+  height: auto;
+}
+
+.qc-embed__tag {
+  padding: 4px 10px;
+  border: 1px solid var(--b-line-strong);
+  border-radius: 4px;
+  color: var(--b-ink-2);
+  font-family: var(--b-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.qc-embed__body {
+  max-width: 680px;
+  padding: clamp(40px, 8vw, 96px) clamp(16px, 4vw, 48px) 160px;
+}
+
+.qc-embed__eyebrow {
+  color: var(--b-accent);
+  font-family: var(--b-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.qc-embed__title {
+  margin-top: 12px;
+  font-family: var(--b-head);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.qc-embed__lede {
+  margin-top: 16px;
+  color: var(--b-ink-2);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.qc-embed__steps {
+  display: grid;
+  gap: 8px;
+  margin-top: 28px;
+  padding-left: 20px;
+  color: var(--b-ink-2);
+  line-height: 1.5;
+}
+
+.qc-embed-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--b-accent);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 30, 60, 0.22);
+  transition: background-color 160ms ease;
+}
+
+.qc-embed-launcher:hover {
+  background: var(--b-accent-hover);
+}
+
+.qc-embed-launcher:focus-visible,
+.qc-embed-panel__control:focus-visible {
+  outline: 2px solid var(--b-accent);
+  outline-offset: 2px;
+}
+
+.qc-embed-positioner {
+  z-index: 50;
+}
+
+.qc-embed-panel {
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  border: 1px solid var(--b-line-strong);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 40px rgba(15, 30, 60, 0.18);
+}
+
+.qc-embed-panel[data-maximized] {
+  border-radius: 0;
+}
+
+.qc-embed-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 16px;
+  background: var(--b-accent);
+  color: #ffffff;
+  cursor: move;
+  user-select: none;
+}
+
+.qc-embed-panel__title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.qc-embed-panel__title {
+  overflow: hidden;
+  color: #ffffff;
+  font-family: var(--b-head);
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qc-embed-panel__controls {
+  display: flex;
+  align-items: center;
+}
+
+.qc-embed-panel__control {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.qc-embed-panel__control:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.qc-embed-panel__control[hidden] {
+  display: none;
+}
+
+.qc-embed-panel__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+.qc-embed-panel__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Touch: every control at least 44px. */
+@media (max-width: 699px) {
+  html[data-brand] .auth-brand {
+    min-height: 44px;
+  }
+
+  html[data-brand] .auth-reveal {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  html[data-brand] .qc-app :is(.openui-agent-sidebar-item, .openui-agent-conversation-starter-item-short, .openui-agent-new-chat-button) {
+    min-height: 44px;
+  }
+
+  html[data-brand] .qc-app .openui-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .qc-embed-panel__control {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 639px) {
+  .qc-embed-launcher {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+/* Public mode: staff sign-in link shown to guests (sidebar footer, mobile header). */
+.qc-signin {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid var(--qc-line-strong);
+  border-radius: 6px;
+  color: var(--qc-ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.qc-signin:hover {
+  border-color: var(--qc-accent);
+  color: var(--qc-accent);
+}
+
+.qc-signin:focus-visible {
+  outline: 2px solid var(--qc-focus);
+  outline-offset: 2px;
+}
+
+html[data-brand] .qc-signin {
+  border-radius: 4px;
+}
+
+@media (max-width: 699px) {
+  .qc-signin {
+    min-height: 44px;
+  }
+}
+
+/* Neutral build's Onyx & Champagne layer (brand.css) paints gold gradients and
+   glows. Brand editions are flat: undo each of those rules here. */
+html[data-brand] .qc-app .openui-agent-welcome-screen__title,
+html[data-brand] .qc-tool-page__head h1,
+html[data-brand] .qc-kpi__value,
+html[data-brand] .auth-showcase__headline em {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-brand] .qc-primary-button,
+html[data-brand] .qc-tag[aria-pressed="true"] {
+  background: var(--qc-accent);
+  box-shadow: none;
+}
+
+html[data-brand] .qc-tile::after,
+html[data-brand] .qc-kpi::after {
+  display: none;
+}
+
+html[data-brand] .qc-tile:hover,
+html[data-brand] .qc-kpi:hover {
+  box-shadow: none;
+  transform: none;
+}

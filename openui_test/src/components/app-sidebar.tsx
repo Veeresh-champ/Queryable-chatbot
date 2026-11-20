@@ -131,8 +131,10 @@ export function renderSidebar({
 }: {
   user: SessionUser | null;
   mode: "light" | "dark";
-  onToggleTheme: () => void;
+  /** Omitted in brand editions, which are light only. */
+  onToggleTheme?: () => void;
 }) {
+  const visitor = user?.role === "visitor";
   return (
     <AgentInterface.Sidebar>
       <SearchShortcut />
@@ -151,7 +153,8 @@ export function renderSidebar({
       </div>
 
       <SideSection id="tools" label="Tools">
-        {TOOLS.map((tool) => (
+        {/* Guests get the map only; the lab and insights studio are for staff. */}
+        {TOOLS.filter((tool) => !visitor || tool.path === TOOL_ROUTES.geo).map((tool) => (
           <AgentInterface.SidebarItem
             key={tool.path}
             icon={tool.icon}
@@ -195,36 +198,48 @@ export function renderSidebar({
             <span>
               {user.role === "admin"
                 ? "Administrator"
+                : visitor
+                  ? "Free questions"
                 : user.plan
                   ? `${user.plan.charAt(0).toUpperCase()}${user.plan.slice(1)} plan`
                   : "Analyst"}
             </span>
           </span>
-          <SettingsButton className="qc-side-user__action" />
-          <button
-            type="button"
-            className="qc-side-user__action"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleTheme();
-            }}
-            aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
-            title={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
-          >
-            {mode === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-          <button
-            type="button"
-            className="qc-side-user__action"
-            onClick={(event) => {
-              event.stopPropagation();
-              void logout();
-            }}
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut size={15} />
-          </button>
+          {visitor ? (
+            <a className="qc-signin" href="/login">
+              Sign in
+            </a>
+          ) : (
+            <>
+              <SettingsButton className="qc-side-user__action" />
+              {onToggleTheme && (
+                <button
+                  type="button"
+                  className="qc-side-user__action"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleTheme();
+                  }}
+                  aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
+                  title={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
+                >
+                  {mode === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+                </button>
+              )}
+              <button
+                type="button"
+                className="qc-side-user__action"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void logout();
+                }}
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <LogOut size={15} />
+              </button>
+            </>
+          )}
         </div>
       )}
     </AgentInterface.Sidebar>

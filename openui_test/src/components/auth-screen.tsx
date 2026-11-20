@@ -7,6 +7,7 @@ import { useSystemThemeMode } from "@openuidev/react-ui";
 
 import { Backdrop } from "@/components/backdrop";
 import { errorMessage } from "@/lib/api";
+import { BRAND } from "@/lib/brand";
 import { useLocalStorage } from "@/lib/use-browser";
 
 export type AuthMode = "signin" | "signup";
@@ -37,13 +38,7 @@ const MONGO_DOWN =
   "MongoDB isn't running, so sign-in can't work yet. Run scripts\\start-mongodb.ps1, then refresh this page.";
 
 /* Sample answer shown on the showcase panel. Same hues as the chart palette. */
-const SAMPLE_BARS = [
-  { label: "United States", value: 412, color: "var(--qc-series-1)" },
-  { label: "India", value: 318, color: "var(--qc-series-2)" },
-  { label: "Germany", value: 241, color: "var(--qc-series-3)" },
-  { label: "United Kingdom", value: 197, color: "var(--qc-series-4)" },
-  { label: "Brazil", value: 154, color: "var(--qc-series-5)" },
-];
+const SAMPLE_BARS = BRAND.showcase.bars.map((bar, index) => ({ ...bar, color: `var(--qc-series-${index + 1})` }));
 
 function PasswordField({
   id,
@@ -94,7 +89,10 @@ function Showcase() {
   return (
     <aside className="auth-showcase" aria-hidden="true">
       <div className="auth-showcase__inner">
-        <p className="auth-showcase__eyebrow">Queryable Chatbot · Data intelligence</p>
+        {BRAND.id && BRAND.logo.dark && (
+          <img className="auth-showcase__logo" src={BRAND.logo.dark} alt={BRAND.logo.alt} width={BRAND.logo.width} height={BRAND.logo.height} />
+        )}
+        <p className="auth-showcase__eyebrow">{BRAND.showcase.eyebrow}</p>
         <h2 className="auth-showcase__headline">
           Ask your data anything.
           <br />
@@ -102,11 +100,11 @@ function Showcase() {
         </h2>
 
         <div className="auth-demo">
-          <div className="auth-demo__question">Top 5 countries by annual HR tech spend</div>
+          <div className="auth-demo__question">{BRAND.showcase.question}</div>
           <div className="auth-demo__card">
             <div className="auth-demo__head">
-              <span>Annual HR tech spend</span>
-              <span className="auth-demo__unit">USD, millions</span>
+              <span>{BRAND.showcase.title}</span>
+              <span className="auth-demo__unit">{BRAND.showcase.unit}</span>
             </div>
             <ul className="auth-demo__bars">
               {SAMPLE_BARS.map((bar, index) => (
@@ -118,12 +116,12 @@ function Showcase() {
                       style={{ width: `${(bar.value / max) * 100}%`, background: bar.color }}
                     />
                   </span>
-                  <span className="auth-demo__value">{bar.value}</span>
+                  <span className="auth-demo__value">{bar.value.toLocaleString("en-US")}</span>
                 </li>
               ))}
             </ul>
             <div className="auth-demo__foot">
-              <Check size={13} /> Verified against 5 rows from <code>span_companies</code>
+              <Check size={13} /> {BRAND.showcase.foot} <code>{BRAND.showcase.source}</code>
             </div>
           </div>
         </div>
@@ -143,7 +141,8 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
   const ids = useId();
   const systemMode = useSystemThemeMode();
   const [savedTheme, setSavedTheme] = useLocalStorage("queryable-chat-theme");
-  const theme = savedTheme === "dark" || savedTheme === "light" ? savedTheme : systemMode;
+  // Brand editions are light only.
+  const theme = BRAND.id ? "light" : savedTheme === "dark" || savedTheme === "light" ? savedTheme : systemMode;
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [signupEnabled, setSignupEnabled] = useState(true);
@@ -269,10 +268,19 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
       <section className="auth-panel">
         <header className="auth-topbar">
           <a className="auth-brand" href="/login">
-            <img src={theme === "dark" ? "/queryable-logo-dark.svg" : "/queryable-logo-light.svg"} alt="" width={30} height={30} />
-            <span>Queryable <span className="auth-brand__accent">Chatbot</span></span>
+            <img
+              src={theme === "dark" && BRAND.logo.dark ? BRAND.logo.dark : BRAND.logo.light}
+              alt={BRAND.logo.alt}
+              width={BRAND.logo.width}
+              height={BRAND.logo.height}
+            />
+            {BRAND.id ? (
+              <span className="auth-brand__product">{BRAND.wordmark[1]}</span>
+            ) : (
+              <span>{BRAND.wordmark[0]} <span className="auth-brand__accent">{BRAND.wordmark[1]}</span></span>
+            )}
           </a>
-          <button
+          {!BRAND.id && <button
             type="button"
             className="qc-icon-button"
             onClick={() => setSavedTheme(nextTheme)}
@@ -280,7 +288,7 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
             title={`Switch to ${nextTheme} mode`}
           >
             {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
+          </button>}
         </header>
 
         <div className="auth-body">
@@ -288,7 +296,7 @@ export function AuthScreen({ initialMode }: { initialMode: AuthMode }) {
           <p className="auth-subtitle">
             {isSignup
               ? "Start asking questions about your business data in seconds."
-              : "Sign in to continue to Queryable Chatbot."}
+              : `Sign in to continue to ${BRAND.productName}.`}
           </p>
 
           {signupEnabled && (

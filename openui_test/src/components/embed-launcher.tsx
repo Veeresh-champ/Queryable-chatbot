@@ -8,7 +8,7 @@ import { ArrowDownLeft, Maximize2, MessageCircle, Minus, X } from "lucide-react"
 import { BRAND } from "@/lib/brand";
 
 /* Adapted from 21st.dev Floating Panel, Chat Widget demo (anubra266, id 6327):
-   same Ark UI parts and controls; Tailwind classes replaced by app/brand.css
+   same Ark UI parts and controls; Tailwind classes replaced by app/brand-editions.css
    (.qc-embed-*) since this app has no Tailwind; demo messages replaced by an
    iframe of the real chat at "/". */
 

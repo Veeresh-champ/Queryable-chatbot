@@ -745,3 +745,30 @@ html[data-brand] .qc-signin {
     min-height: 44px;
   }
 }
+
+/* Neutral build's Onyx & Champagne layer (brand.css) paints gold gradients and
+   glows. Brand editions are flat: undo each of those rules here. */
+html[data-brand] .qc-app .openui-agent-welcome-screen__title,
+html[data-brand] .qc-tool-page__head h1,
+html[data-brand] .qc-kpi__value,
+html[data-brand] .auth-showcase__headline em {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-brand] .qc-primary-button,
+html[data-brand] .qc-tag[aria-pressed="true"] {
+  background: var(--qc-accent);
+  box-shadow: none;
+}
+
+html[data-brand] .qc-tile::after,
+html[data-brand] .qc-kpi::after {
+  display: none;
+}
+
+html[data-brand] .qc-tile:hover,
+html[data-brand] .qc-kpi:hover {
+  box-shadow: none;
+  transform: none;
+}

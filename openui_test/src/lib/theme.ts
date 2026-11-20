@@ -101,7 +101,7 @@ export const queryableLightTheme = createTheme({
 /**
  * Brand editions are light only. Same shape as the light theme, with the
  * brand's ink, accent and chart palette (brand skills: lakeb2b, span).
- * Matching CSS tokens live in app/brand.css.
+ * Matching CSS tokens live in app/brand-editions.css.
  */
 const brandTheme = (b: {
   series: string[];

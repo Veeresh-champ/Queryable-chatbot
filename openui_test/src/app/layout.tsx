@@ -56,7 +56,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-brand={BRAND.id ?? undefined}
-      // Read by the composer footnote in brand.css; CSS content cannot import brand.ts.
+      // Read by the composer footnote in brand-editions.css; CSS content cannot import brand.ts.
       style={BRAND.id ? ({ "--b-disclaimer": JSON.stringify(BRAND.disclaimer) } as React.CSSProperties) : undefined}
     >
       <head>

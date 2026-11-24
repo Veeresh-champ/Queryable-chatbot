@@ -18,6 +18,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY backend ./backend
+COPY mcp_server ./mcp_server
 COPY scripts ./scripts
 COPY --from=openui /app/openui_test/node_modules ./openui_test/node_modules
 COPY openui_test/scripts/openui-validator.mjs ./openui_test/scripts/

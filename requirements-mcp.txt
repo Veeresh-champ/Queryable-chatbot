@@ -1,3 +1,0 @@
-# MCP server (agent-to-agent). Install: pip install -r requirements-mcp.txt
--r requirements.txt
-mcp==1.12.4

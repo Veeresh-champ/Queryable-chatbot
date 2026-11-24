@@ -90,7 +90,7 @@ async def status(request: Request, admin=Depends(require_admin)):
         channels["mcp"] = {"ok": db_ok, "detail": f"MCP server loaded with {len(names)} tools.", "tools": names}
     except Exception as error:  # noqa: BLE001 - shown as a red signal
         channels["mcp"] = {"ok": False, "detail": f"MCP server could not load ({type(error).__name__}). "
-                                                  "Run: pip install -r requirements-mcp.txt", "tools": []}
+                                                  "Run: pip install -r requirements.txt", "tools": []}
     card = agent_card(str(request.base_url))
     channels["a2a"] = {"ok": db_ok, "detail": f"Agent Card served with {len(card['skills'])} skills.",
                        "skills": [s["id"] for s in card["skills"]]}

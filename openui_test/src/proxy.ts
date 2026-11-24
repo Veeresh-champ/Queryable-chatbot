@@ -18,6 +18,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Pages only: API calls are proxied to FastAPI, which returns 401 itself.
-  matcher: ["/((?!api/|_next/|favicon|icon|logos/|.*\.svg$).*)"],
+  // Pages only: API calls (and the A2A endpoint/agent card) are proxied to
+  // FastAPI, which returns 401 itself.
+  matcher: ["/((?!api/|_next/|\.well-known/|a2a$|favicon|icon|logos/|.*\.svg$).*)"],
 };

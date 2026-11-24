@@ -4,6 +4,8 @@ starlette==1.6.0
 uvicorn==0.53.0
 pydantic==2.12.5
 pymongo==4.18.3
+# Security fix (GHSA-45c3-73f7-pv4m, GHSA-vvf4-9x63-8xvv); 2.9 needs Python 3.11+ (Docker/CI use 3.12)
+dnspython==2.9.2; python_version >= "3.11"
 python-dotenv==1.2.3
 httpx==0.28.1
 requests==2.34.2

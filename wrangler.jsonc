@@ -7,7 +7,7 @@
 {
   "$schema": "openui_test/node_modules/wrangler/config-schema.json",
   "name": "queryable-chatbot",
-  "main": "openui_test/.open-next/worker.js",
+  "main": "openui_test/custom-worker.js",
   // Needed to stay under the 3 MiB (gzip) Worker size limit on the free plan.
   "minify": true,
   "compatibility_date": "2026-10-01",
@@ -25,8 +25,15 @@
       "service": "queryable-chatbot"
     }
   ],
+  // Every 10 minutes: ping the Render backend so it never goes to sleep
+  // (see custom-worker.js). Free plan allows up to 5 cron triggers.
+  "triggers": {
+    "crons": ["*/10 * * * *"]
+  },
   "vars": {
-    "SESSION_COOKIE_NAME": "qc_session"
+    "SESSION_COOKIE_NAME": "qc_session",
+    // Backend pinged by the keep-warm cron (not a secret).
+    "BACKEND_URL": "https://queryable-chatbot-api.onrender.com"
   },
   "observability": {
     "enabled": true

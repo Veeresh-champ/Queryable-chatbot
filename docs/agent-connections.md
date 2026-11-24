@@ -89,7 +89,7 @@ curl -X POST http://127.0.0.1:8000/a2a -H "Authorization: Bearer qc-..." -H "Con
     {"kind": "data", "data": {"skill": "match_profile", "profile": {"countries": ["India"], "sizes": ["large"]}}}]}}}'
 ```
 
-## Results from the first test run (24 Nov 2026, demo copy of the data)
+## Results from the first test run (24 Nov 2026, project datasets)
 
 **Accuracy:** 8/8 answers matched numbers computed directly from MongoDB
 (counts, averages, attrition rates, maximums).
@@ -103,7 +103,7 @@ curl -X POST http://127.0.0.1:8000/a2a -H "Authorization: Bearer qc-..." -H "Con
 | EOR partnerships lead | 4 | 3 | 3 | 75 international accounts, 102 fast-growth |
 | Fintech compliance consultant | 3 | 4 | 3 | 46 licensed institutions, 66 in the USA |
 | Payroll sales head (India) | 3 | 3 | 3 | Did not filter to India: should have used `match_profile` |
-| E-commerce ops | 1 | 1 | 1 | Expected: no e-commerce data in the demo copy, and it said so |
+| E-commerce ops | 1 | 1 | 1 | The e-commerce tables were not in that run; the agent correctly said so. Re-run on the full database. |
 
 **What we learned**
 

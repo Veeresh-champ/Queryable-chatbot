@@ -26,6 +26,8 @@ The chatbot turns each question into a **validated, read-only MongoDB query**, r
 - **Feedback:** 👍 / 👎 on every answer, stored with the query and trace ID for debugging.
 - **Production basics:** Docker Compose, health probes, request logs, GitHub Actions CI.
 
+- **Agent connections (A2U · MCP · A2A):** besides the chat (agent to user), other agents can use the data as MCP tools (`mcp_server/`) or talk to it as a peer over the A2A protocol (`/.well-known/agent-card.json`, `/a2a`). Every agent call is logged and shown in **Admin → Agent connections**. See [`docs/agent-connections.md`](docs/agent-connections.md).
+
 ## Tech stack
 
 | Layer | Technology |

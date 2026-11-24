@@ -1,3 +1,4 @@
+import contextvars
 import json
 import re
 import time
@@ -31,6 +32,22 @@ llm = ChatOpenAI(
     max_retries=1,
     extra_body=openrouter_speed_options() or None,
 )
+
+# --------------------------------------------------
+# RUN TRACE (agent-to-agent API)
+# --------------------------------------------------
+
+# When set to a dict, run_langchain_agent records what it did (route, the
+# executed query and its rows) so /api/agent/* can return structured JSON.
+# Unset for the normal chat path, so nothing changes there.
+RUN_TRACE = contextvars.ContextVar("run_trace", default=None)
+
+
+def _trace(**values):
+    trace = RUN_TRACE.get()
+    if isinstance(trace, dict):
+        trace.update(values)
+
 
 # --------------------------------------------------
 # LLM USAGE MONITORING
@@ -230,6 +247,7 @@ def execute_mongodb_query(query_data):
     if is_tool_error(result):
         raise RuntimeError(str(result))
 
+    _trace(query=query_data, rows=result)
     return result
 
 
@@ -754,6 +772,8 @@ def run_langchain_agent(question):
         routing_start,
     )
 
+    _trace(route="database" if database_question else "general")
+
     print(
         "[DEBUG] Selected route:",
         "DATABASE" if database_question else "GENERAL",
@@ -841,6 +861,7 @@ Return the answer only.
             continue
 
         if isinstance(query_data, dict) and query_data.get("unanswerable"):
+            _trace(status="unanswerable", missing=query_data["unanswerable"])
             return (
                 f"The available data has no field for {query_data['unanswerable']}, "
                 "so I can't answer that without guessing."

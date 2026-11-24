@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Sun,
   Target,
+  Workflow,
 } from "lucide-react";
 
 import { logout, type SessionUser } from "@/lib/api";
@@ -36,6 +37,7 @@ export const TOOL_ROUTES = {
   admin: "admin",
   agents: "agents",
   integrations: "integrations",
+  connections: "connections",
 } as const;
 
 const TOOLS = [
@@ -52,6 +54,7 @@ const ADMIN_TOOLS = [
   { path: TOOL_ROUTES.admin, label: "Admin console", icon: <ShieldCheck size={16} />, adminOnly: true },
   { path: TOOL_ROUTES.catalog, label: "Data catalog", icon: <Database size={16} />, adminOnly: true },
   { path: TOOL_ROUTES.prompts, label: "Prompt library", icon: <BookOpen size={16} /> },
+  { path: TOOL_ROUTES.connections, label: "Agent connections", icon: <Workflow size={16} />, adminOnly: true },
   { path: TOOL_ROUTES.agents, label: "Agent map", icon: <Network size={16} /> },
   { path: TOOL_ROUTES.integrations, label: "Integrations", icon: <Plug size={16} /> },
 ];

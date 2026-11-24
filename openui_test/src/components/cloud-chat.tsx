@@ -24,6 +24,7 @@ import { AdminOnly, ChatFileDrop } from "@/components/admin-only";
 import { AdminPage } from "@/components/tools/admin-page";
 import { AgentMapPage } from "@/components/tools/agent-map-page";
 import { IntegrationsPage } from "@/components/tools/integrations-page";
+import { AgentConnectionsPage } from "@/components/tools/agent-connections-page";
 import { AnalyticsLabPage } from "@/components/tools/analytics-lab-page";
 import { CatalogPage } from "@/components/tools/catalog-page";
 import { GeoExplorerPage } from "@/components/tools/geo-explorer-page";
@@ -229,6 +230,11 @@ export default function CloudChat() {
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.agents}>
             <AgentMapPage />
+          </AgentInterface.Route>
+          <AgentInterface.Route path={TOOL_ROUTES.connections}>
+            <AdminOnly role={user ? user.role : null}>
+              <AgentConnectionsPage />
+            </AdminOnly>
           </AgentInterface.Route>
           <AgentInterface.Route path={TOOL_ROUTES.integrations}>
             <IntegrationsPage />

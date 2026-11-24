@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pymongo.errors import PyMongoError
 
-from backend import account, admin, agents, artifacts, auth, data_catalog, feedback, opportunities, projects, threads
+from backend import a2a, account, admin, agent_api, agents, artifacts, auth, data_catalog, feedback, opportunities, projects, threads
 from backend.admin import require_admin
 from backend.auth import require_user
 from backend.chat_service import ChatRun, model_options, with_heartbeat
@@ -60,6 +60,9 @@ app.include_router(data_catalog.router)
 app.include_router(projects.router)
 app.include_router(projects.meta_router)
 app.include_router(opportunities.router)
+app.include_router(agent_api.router)
+app.include_router(agent_api.admin_router)
+app.include_router(a2a.router)
 
 executor = ThreadPoolExecutor(max_workers=4)
 
@@ -77,6 +80,7 @@ def startup():
         artifacts.ensure_indexes()
         data_catalog.ensure_indexes()
         projects.ensure_indexes()
+        agent_api.ensure_indexes()
         created = projects.bootstrap_defaults()
         if created:
             logger.info("Created %s default project(s) for the sample data", created)
@@ -244,6 +248,9 @@ def check_rate_limit(user):
             )
         recent.append(now)
         _recent_requests[user["username"]] = recent
+
+
+agent_api.rate_limit = check_rate_limit
 
 
 def trusted_messages(client_messages, stored_thread):

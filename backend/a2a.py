@@ -17,6 +17,7 @@ This module implements the core of the A2A protocol (JSON-RPC 2.0):
     GET  /.well-known/agent-card.json   -> Agent Card: who we are, skills, auth (public)
     GET  /.well-known/agent.json        -> same card (older path)
     POST /a2a                           -> JSON-RPC: message/send, tasks/get
+    (also /api/a2a/agent-card and /api/a2a, so the web app can call them through its /api proxy)
 
 A message is ``{"role": "user", "parts": [...]}``. A ``text`` part is the
 request in plain English. An optional ``data`` part steers the skill:
@@ -88,6 +89,7 @@ def agent_card(base_url: str):
 
 @router.get("/.well-known/agent-card.json")
 @router.get("/.well-known/agent.json")
+@router.get("/api/a2a/agent-card")  # same card, reachable through the web app's /api proxy
 def get_agent_card(request: Request):
     return agent_card(str(request.base_url))
 
@@ -179,6 +181,7 @@ async def _handle(request, user, message):
 
 
 @router.post("/a2a")
+@router.post("/api/a2a")  # same endpoint, reachable through the web app's /api proxy
 async def a2a_rpc(request: Request):
     try:
         rpc = await request.json()

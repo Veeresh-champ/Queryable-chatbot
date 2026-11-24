@@ -168,3 +168,92 @@ def test_internal_logs_are_never_datasets(mongo):
     db["agent_query_log"].insert_one({"tool": "ask_data"})
     names = business_collection_names(scoped=False)
     assert "security_log" not in names and "agent_query_log" not in names
+
+
+# --------------------------------------------------
+# Playground (live boxes on the Agent connections page)
+# --------------------------------------------------
+
+@pytest.fixture()
+def admin_client(app_client, mongo):
+    from backend.auth import create_user, users
+
+    users.delete_many({"username": "pgadmin"})
+    create_user("pgadmin", "correct-horse-battery", "PG Admin", role="admin")
+    response = app_client.post("/api/auth/login", json={"username": "pgadmin", "password": "correct-horse-battery"})
+    assert response.status_code == 200
+    yield app_client
+    users.delete_many({"username": "pgadmin"})
+
+
+def test_playground_is_admin_only(logged_in):
+    assert logged_in.get("/api/agent/playground/status").status_code == 403
+
+
+def test_playground_status_signals(admin_client):
+    body = admin_client.get("/api/agent/playground/status").json()
+    assert set(body["channels"]) == {"a2u", "mcp", "a2a"}
+    assert body["channels"]["mcp"]["ok"] and "ask_data" in body["channels"]["mcp"]["tools"]
+    assert body["channels"]["a2a"]["skills"] == ["ask", "find_opportunities", "match_profile"]
+    assert len(body["personas"]) == 6
+
+
+def test_playground_runs_real_mcp_session(admin_client, fake_agent):
+    body = admin_client.post("/api/agent/playground/mcp",
+                             json={"tool": "ask_data", "arguments": {"question": "Companies in India?"}}).json()
+    assert body["ok"], body
+    assert [s["step"] for s in body["signals"]] == ["initialize", "tools/list", "tools/call ask_data"]
+    assert body["result"]["row_count"] == 2
+    entry = agent_api.LOG.find_one({"tool": "ask_data"})
+    assert entry["channel"] == "mcp" and entry["agent"] == "playground"
+
+
+def test_playground_mcp_list_datasets(admin_client):
+    body = admin_client.post("/api/agent/playground/mcp", json={"tool": "list_datasets"}).json()
+    assert body["ok"] and any(d["name"] == "span_companies" for d in body["result"]["datasets"])
+
+
+def test_playground_rejects_unknown_tool(admin_client):
+    assert admin_client.post("/api/agent/playground/mcp", json={"tool": "drop_db"}).status_code == 400
+
+
+def test_playground_personal_agent(admin_client, fake_agent, monkeypatch):
+    from backend import personal_agent
+
+    script = iter([
+        {"role": "assistant", "content": None, "tool_calls": [
+            {"id": "c1", "type": "function", "function": {"name": "list_datasets", "arguments": "{}"}}]},
+        {"role": "assistant", "content": None, "tool_calls": [
+            {"id": "c2", "type": "function", "function": {
+                "name": "ask_data", "arguments": '{"question": "Companies in India?", "caller_context": "HR lead"}'}}]},
+        {"role": "assistant", "content": '{"insights": [{"title": "Two companies", "detail": "Alpha, Beta", '
+                                         '"why_it_matters": "targets"}], "data_gaps": []}'},
+        {"role": "assistant", "content": '{"relevance": 4, "grounding": 5, "actionability": 4, "verdict": "ok"}'},
+    ])
+    monkeypatch.setattr(personal_agent, "llm", lambda *a, **k: next(script))
+    body = admin_client.post("/api/agent/playground/personal", json={"persona_id": "hr-director-attrition"}).json()
+    assert body["ok"], body
+    assert [c["tool"] for c in body["calls"]] == ["list_datasets", "ask_data"]
+    assert body["calls"][1]["summary"] == "answered · 2 rows"
+    assert body["result"]["insights"][0]["title"] == "Two companies"
+    assert body["judge"]["grounding"] == 5
+    assert agent_api.LOG.find_one({"agent": "persona-hr-director-attrition", "tool": "ask_data"})
+
+
+def test_playground_personal_agent_without_model(admin_client, monkeypatch):
+    from backend import personal_agent
+
+    def no_model(*a, **k):
+        raise personal_agent.AgentError("OPENROUTER_API_KEY is not set")
+
+    monkeypatch.setattr(personal_agent, "llm", no_model)
+    body = admin_client.post("/api/agent/playground/personal", json={"persona_id": "fintech-licensed"}).json()
+    assert body["ok"] is False and "OPENROUTER_API_KEY" in body["error"]
+
+
+def test_a2a_reachable_under_api(admin_client, fake_agent):
+    card = admin_client.get("/api/a2a/agent-card").json()
+    assert card["name"] == "Queryable Data Agent"
+    task = admin_client.post("/api/a2a", json={"jsonrpc": "2.0", "id": 1, "method": "message/send", "params": {
+        "message": {"role": "user", "parts": [{"kind": "text", "text": "Companies in India?"}]}}}).json()["result"]
+    assert task["status"]["state"] == "completed"

@@ -21,18 +21,32 @@ Environment:
 """
 
 import argparse
+import contextvars
 import json
 import os
 import uuid
 
+import warnings
+
 import httpx
-from mcp.server.fastmcp import Context, FastMCP
+
+# FastMCP's settings model (pydantic-settings) warns about its own 'lifespan'
+# field on import; it is harmless and not ours to fix, so keep consoles clean.
+warnings.filterwarnings("ignore", message=r"Field 'lifespan' has an incomplete definition",
+                        module=r"pydantic_settings\..*")
+
+from mcp.server.fastmcp import Context, FastMCP  # noqa: E402
 
 API_URL = os.getenv("QC_API_URL", "http://127.0.0.1:8000").rstrip("/")
 API_KEY = os.getenv("QC_API_KEY", "")
 DEFAULT_PROJECT = os.getenv("QC_PROJECT") or None
 TIMEOUT = float(os.getenv("QC_TIMEOUT_SECONDS", "120"))
 SESSION = uuid.uuid4().hex[:12]
+
+# Set by the backend's in-app playground (backend/agent_playground.py) when it
+# runs this server in-process: calls then go straight to the FastAPI app with
+# the signed-in user's own credentials instead of QC_API_KEY over the network.
+IN_PROCESS = contextvars.ContextVar("in_process", default=None)
 
 mcp = FastMCP(
     "queryable-data-agent",
@@ -57,7 +71,10 @@ def _headers(ctx: Context | None, caller_context: str | None):
     except Exception:  # noqa: BLE001 - client info is optional
         pass
     headers = {"X-Agent-Name": agent[:64], "X-Agent-Session": SESSION, "X-Agent-Channel": "mcp"}
-    if API_KEY:
+    local = IN_PROCESS.get()
+    if local:
+        headers.update(local.get("headers") or {})
+    elif API_KEY:
         headers["Authorization"] = f"Bearer {API_KEY}"
     if caller_context:
         headers["X-Agent-Persona"] = " ".join(caller_context.split())[:300]
@@ -65,7 +82,10 @@ def _headers(ctx: Context | None, caller_context: str | None):
 
 
 async def _call(method, path, ctx, caller_context=None, **kwargs):
-    async with httpx.AsyncClient(base_url=API_URL, timeout=TIMEOUT) as client:
+    local = IN_PROCESS.get()
+    client = (httpx.AsyncClient(transport=local["transport"], base_url="http://in-process", timeout=TIMEOUT)
+              if local else httpx.AsyncClient(base_url=API_URL, timeout=TIMEOUT))
+    async with client:
         response = await client.request(method, path, headers=_headers(ctx, caller_context), **kwargs)
     if response.status_code >= 400:
         try:

@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, Bot, Cable, MessagesSquare, RefreshCw, ShieldCheck, Users, Workflow } from "lucide-react";
 
-import { LoadState, ToolPage, useApi } from "@/components/tools/shared";
+import { PersonalAgent, TryA2A, TryA2U, TryMCP, type Persona } from "@/components/tools/agent-live";
+import { LoadState, ToolPage, useApi, useAsk } from "@/components/tools/shared";
 
 /** Agent connections (GET /api/admin/agent-queries): the three ways in, side by side, and what agents ask. */
 
@@ -39,6 +40,13 @@ type Summary = {
 };
 
 type ChannelId = "a2u" | "mcp" | "a2a";
+
+type Status = {
+  channels: Record<ChannelId, { ok: boolean; detail: string }>;
+  model: string | null;
+  personal_agent: { ok: boolean; detail: string };
+  personas: Persona[];
+};
 
 const CHANNELS: {
   id: ChannelId;
@@ -163,6 +171,8 @@ export function AgentConnectionsPage() {
   const [channel, setChannel] = useState<ChannelId | "all">("all");
   const [open, setOpen] = useState<ChannelId>("a2a");
   const { data, error, loading, reload } = useApi<Summary>(`/api/admin/agent-queries?days=${days}&limit=200`);
+  const status = useApi<Status>("/api/agent/playground/status");
+  const ask = useAsk();
 
   const recent = useMemo(
     () => (data?.recent ?? []).filter((e) => channel === "all" || (e.channel ?? "api") === channel),
@@ -175,7 +185,7 @@ export function AgentConnectionsPage() {
       icon={<Workflow size={13} />}
       eyebrow="Agent connections · Admin"
       title="Three ways into the data agent"
-      description="People chat with it (A2U), other agents use its tools (MCP), and personal agents talk to it as a peer (A2A). All three run the same guarded, read-only pipeline."
+      description="People chat with it (A2U), other agents use its tools (MCP), and personal agents talk to it as a peer (A2A). Pick a box, run it live and watch each step. All three use the same guarded, read-only pipeline."
       actions={
         <div className="ac-actions">
           <select className="ac-select" value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Period">
@@ -183,7 +193,7 @@ export function AgentConnectionsPage() {
             <option value={30}>Last 30 days</option>
             <option value={90}>Last 90 days</option>
           </select>
-          <button type="button" className="qc-icon-button" onClick={reload} aria-label="Refresh" title="Refresh">
+          <button type="button" className="qc-icon-button" onClick={() => { reload(); status.reload(); }} aria-label="Refresh" title="Refresh">
             <RefreshCw size={15} />
           </button>
         </div>
@@ -206,10 +216,17 @@ export function AgentConnectionsPage() {
                 <span className="ac-lane__name">{c.name}</span>
                 <span className="ac-lane__full">{c.full}</span>
               </span>
+              <span
+                className="ac-light"
+                data-state={!status.data ? "unknown" : status.data.channels[c.id]?.ok ? "ok" : "error"}
+                title={status.data?.channels[c.id]?.detail ?? "Checking…"}
+                aria-label={status.data?.channels[c.id]?.ok ? "Ready" : "Not ready"}
+              />
               <span className="ac-lane__count" title={`Calls in the last ${days} days`}>
                 {data ? fmt(data.channels?.[c.id]) : "·"}
               </span>
             </span>
+            <span className="ac-lane__status">{status.data?.channels[c.id]?.detail ?? "Checking status…"}</span>
             <dl className="ac-lane__facts">
               <div><dt>Who starts</dt><dd>{c.who}</dd></div>
               <div><dt>Who reasons</dt><dd>{c.thinks}</dd></div>
@@ -241,11 +258,21 @@ export function AgentConnectionsPage() {
             validator (read-only allowlist) → MongoDB → PII masked → answer with the exact query and rows
           </span>
         </div>
-        <div className="ac-connect">
-          <span className="ac-card__title">Connect</span>
-          <pre className="ac-code">{active.connect}</pre>
+        <div className="ac-live">
+          <span className="ac-card__title">Try {active.name} live</span>
+          {open === "a2u" && <TryA2U onDone={reload} openInChat={ask} />}
+          {open === "mcp" && <TryMCP onDone={reload} />}
+          {open === "a2a" && <TryA2A onDone={reload} />}
         </div>
+        <details className="ac-connect">
+          <summary className="ac-card__title">How an outside agent connects</summary>
+          <pre className="ac-code">{active.connect}</pre>
+        </details>
       </section>
+
+      {status.data && (
+        <PersonalAgent personas={status.data.personas} ready={status.data.personal_agent.ok} onDone={reload} />
+      )}
 
       <LoadState loading={loading && !data} error={error} onRetry={reload} />
 

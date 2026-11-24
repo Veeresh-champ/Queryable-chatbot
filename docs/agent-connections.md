@@ -26,6 +26,17 @@ which tool to call. With A2A, it just says what it needs ("large payroll
 prospects in India") and our agent decides how. Ship MCP first, since most
 assistants support it today. A2A is the peer-to-peer step on top.
 
+## Try it live (Admin → Agent connections)
+
+- **Status lights** on each box: green = ready (MongoDB connected, model key set, MCP server loaded, Agent Card served).
+- **Click a box, ask a question, press Run.** Each step shows as a signal: green = done, blue spinner = running, red = failed with the reason.
+  - A2U: `user → agent` → `agent → user`, plus the answer and a button to open it in the full chat.
+  - MCP: `initialize` → `tools/list` → `tools/call <tool>`, a real MCP session run inside the app with your login.
+  - A2A: `discover` (Agent Card) → `message/send` → `task completed`, with the result artifact.
+- **Personal agent → our agent:** pick a person (or describe your own) and run it. You see every tool call it made,
+  the insights it brought back, the data gaps it reported and the judge's scores. This is the scenario: a personal
+  agent that knows a person's needs talks to our agent, which knows the data.
+
 ## What was added
 
 | Piece | File |

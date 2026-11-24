@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pymongo.errors import PyMongoError
 
-from backend import a2a, account, admin, agent_api, agents, artifacts, auth, data_catalog, feedback, opportunities, projects, threads
+from backend import a2a, account, admin, agent_api, agent_playground, agents, artifacts, auth, data_catalog, feedback, opportunities, projects, threads
 from backend.admin import require_admin
 from backend.auth import require_user
 from backend.chat_service import ChatRun, model_options, with_heartbeat
@@ -63,6 +63,7 @@ app.include_router(opportunities.router)
 app.include_router(agent_api.router)
 app.include_router(agent_api.admin_router)
 app.include_router(a2a.router)
+app.include_router(agent_playground.router)
 
 executor = ThreadPoolExecutor(max_workers=4)
 

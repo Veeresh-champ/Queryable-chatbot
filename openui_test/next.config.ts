@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
     turbopackMinify: false,
     // Chat answers can take longer than the 30 s default proxy timeout.
     proxyTimeout: 180_000,
+    // Marks this app as upgraded by the Next.js security upgrade (16.4.2 -> 16.4.6).
+    agentUpgrade: "security",
   },
   async rewrites() {
     return [

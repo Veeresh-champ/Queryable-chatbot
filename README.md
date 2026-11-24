@@ -1,10 +1,20 @@
-# Queryable Chatbot
+# Intent Bot
 
-Ask questions about your business data in plain English and get answers, tables and charts, without writing a single database query.
+An agent-to-agent intent system over proprietary data. Other agents (or people) say what they need; Intent Bot works out the intent, runs a **guarded, read-only** query against the data, and shares only the insight, never the raw dataset, credentials or personal data.
 
-> "How many companies are in India?" · "Which deployment type has the highest average HR tech spend?" · "Show attrition by department"
+It can be reached three ways, all through the same safety pipeline:
 
-The chatbot turns each question into a **validated, read-only MongoDB query**, runs it, and replies with a rich answer rendered by **OpenUI** (tables, charts, cards). API keys stay on the server; the browser never sees them.
+| Channel | Who talks to it | Endpoint |
+|---|---|---|
+| **A2U** (agent → user) | A person in the web chat | `POST /api/chat` |
+| **MCP** (agent uses our tools) | Claude Desktop, Claude Code, any MCP client | `mcp_server/server.py` |
+| **A2A** (agent ↔ agent) | A personal agent acting for a user | `/.well-known/agent-card.json`, `POST /a2a` |
+
+**How data leakage is prevented:** every question goes through guardrails (prompt-injection and write-intent checks), API-key auth and project scoping, an allowlist validator (collections, fields, operators, row and time limits), read-only execution, and PII masking before anything leaves the server. Every agent call is logged in **Admin → Agent connections**. Details: [`docs/agent-connections.md`](docs/agent-connections.md) and [`docs/security/`](docs/security/).
+
+> "How many companies are in India?" · "Large payroll prospects in India" · "Show attrition by department"
+
+Answers come back as tables, charts and cards (rendered by **OpenUI**) for people, and as structured JSON / A2A artifacts for agents. API keys stay on the server; the browser never sees them.
 
 ---
 
@@ -68,8 +78,8 @@ See [`docs/architecture.md`](docs/architecture.md) for the full endpoint list an
 ### 2. Clone and configure
 
 ```bash
-git clone https://github.com/Veeresh-champ/Queryable-chatbot.git
-cd Queryable-chatbot
+git clone https://github.com/Champ-Deep/Intent-Bot.git
+cd Intent-Bot
 cp .env.example .env          # Windows PowerShell: copy .env.example .env
 ```
 
@@ -163,7 +173,7 @@ Then open <http://localhost:3000>. To create an admin user inside the container:
 docker compose exec backend python -m scripts.create_user admin --role admin
 ```
 
-For production, keep `ALLOW_SIGNUP=false` (the default) and `COOKIE_SECURE=true` (the default unless `FRONTEND_URL` is plain-HTTP localhost), put HTTPS in front, and set `MONGODB_READONLY_URI` to a MongoDB user with only the `read` role so model-generated queries cannot write even in theory. See `SECURITY_AUDIT_REPORT.md`.
+For production, keep `ALLOW_SIGNUP=false` (the default) and `COOKIE_SECURE=true` (the default unless `FRONTEND_URL` is plain-HTTP localhost), put HTTPS in front, and set `MONGODB_READONLY_URI` to a MongoDB user with only the `read` role so model-generated queries cannot write even in theory. See [`docs/security/SECURITY_AUDIT_REPORT.md`](docs/security/SECURITY_AUDIT_REPORT.md).
 
 ---
 
@@ -181,7 +191,7 @@ For production, keep `ALLOW_SIGNUP=false` (the default) and `COOKIE_SECURE=true`
    MONGODB_URI="mongodb+srv://..." python -m scripts.create_user admin --role admin
    ```
 2. **Render:** Dashboard → New → Blueprint → pick this repo. Fill in `MONGODB_URI`, `OPENROUTER_API_KEY` and `FRONTEND_URL` (the Cloudflare URL from step 3; update it after the first deploy).
-3. **Cloudflare (Git builds):** connect this repo to a Worker named `queryable-chatbot` with Root directory `/`, no build command, and deploy command `npx wrangler deploy`. The root [`wrangler.jsonc`](wrangler.jsonc) builds `openui_test/` with OpenNext and deploys it. The `/api/*` rewrite is fixed at build time, so add a build variable `BACKEND_URL` set to your Render URL (it defaults to `https://queryable-chatbot-api.onrender.com`).
+3. **Cloudflare:** the GitHub workflow does not deploy automatically; run **Actions → Deploy to Cloudflare → Run workflow** after adding the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets. Alternatively, with **Git builds**: connect this repo to a Worker named `queryable-chatbot` with Root directory `/`, no build command, and deploy command `npx wrangler deploy`. The root [`wrangler.jsonc`](wrangler.jsonc) builds `openui_test/` with OpenNext and deploys it. The `/api/*` rewrite is fixed at build time, so add a build variable `BACKEND_URL` set to your Render URL (it defaults to `https://queryable-chatbot-api.onrender.com`).
 
    **Or deploy from your machine:**
    ```bash
@@ -273,7 +283,7 @@ curl http://127.0.0.1:8000/ask \
 ## Testing
 
 ```bash
-python -m pytest                  # backend: 206 tests, needs MongoDB running
+python -m pytest                  # backend tests, need MongoDB running
 cd openui_test
 npm run typecheck && npm run lint # frontend
 ```
@@ -282,15 +292,15 @@ The tests use a separate `queryable_chatbot_test` database and mock every LLM ca
 
 `python evaluate_golden_set.py` runs a small golden-question set against the real model and writes `evaluation_results.json`.
 
-GitHub Actions (`.github/workflows/ci.yml`) runs the backend tests, the frontend typecheck, lint and build, and both Docker image builds on every push.
+GitHub Actions (`.github/workflows/ci.yml`) runs the backend tests, the frontend typecheck, lint and build, a security scan, and both Docker image builds on every push. The Cloudflare deploy workflow is manual only.
 
 ---
 
 ## Project structure
 
 ```text
-Queryable-chatbot/
-├── backend/                 FastAPI app
+Intent-Bot/
+├── backend/                 FastAPI app (incl. agent API and A2A endpoint)
 │   ├── main.py              app entry point and routes
 │   ├── chat_service.py      /api/chat streaming flow
 │   ├── langchain_agent.py   routing + query generation
@@ -313,6 +323,7 @@ Queryable-chatbot/
 │   ├── src/app/             pages (chat, login, signup)
 │   ├── src/components/      chat UI, charts, tools, globe
 │   └── scripts/             OpenUI validator (also used by the backend)
+├── mcp_server/              MCP server exposing the data tools to other agents
 ├── scripts/                 data importers, create_user, benchmarks
 ├── tests/                   pytest suite
 ├── data/                    sample CSV datasets

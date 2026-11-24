@@ -1,4 +1,5 @@
-# Deploys the Next.js frontend to Cloudflare Workers on every push to main.
+# Deploys the Next.js frontend to Cloudflare Workers. Manual only:
+# run it from Actions -> Deploy to Cloudflare -> Run workflow.
 # Needs two repository secrets (Settings -> Secrets and variables -> Actions):
 #   CLOUDFLARE_API_TOKEN   - token from the "Edit Cloudflare Workers" template
 #   CLOUDFLARE_ACCOUNT_ID  - the Cloudflare account id
@@ -6,8 +7,6 @@
 name: Deploy to Cloudflare
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

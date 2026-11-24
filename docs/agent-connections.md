@@ -49,13 +49,13 @@ assistants support it today. A2A is the peer-to-peer step on top.
 | Persona test: 6 simulated personal agents over MCP, scored by a judge model | `scripts/agent_persona_test.py` |
 | Accuracy check: agent answers vs. numbers computed straight from MongoDB | `scripts/agent_accuracy_check.py` |
 | A2A demo client | `scripts/a2a_demo.py` |
-| Tests (14) | `tests/test_agent_api.py` |
+| Tests (22) | `tests/test_agent_api.py` |
 | Flat single-colour theme | `openui_test/src/app/solid.css` |
 
 ## Run it
 
 ```powershell
-pip install -r requirements-mcp.txt          # adds the MCP SDK
+pip install -r requirements.txt              # includes the MCP SDK
 .\start.ps1                                   # or start the backend and frontend as usual
 ```
 

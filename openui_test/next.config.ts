@@ -46,7 +46,13 @@ const nextConfig: NextConfig = {
     agentUpgrade: "security",
   },
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${BACKEND_URL}/api/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${BACKEND_URL}/api/:path*` },
+      // A2A discovery and endpoint, so outside agents can use the public web address.
+      { source: "/.well-known/agent-card.json", destination: `${BACKEND_URL}/.well-known/agent-card.json` },
+      { source: "/.well-known/agent.json", destination: `${BACKEND_URL}/.well-known/agent.json` },
+      { source: "/a2a", destination: `${BACKEND_URL}/a2a` },
+    ];
   },
   async headers() {
     return [
